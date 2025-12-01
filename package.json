@@ -1,0 +1,109 @@
+{
+  "name": "unify-chat-providers",
+  "displayName": "Unify Chat Providers",
+  "description": "Manage and register multiple LLM chat providers in VS Code using the Language Model Chat Provider API.",
+  "version": "0.0.1",
+  "publisher": "example",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.88.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:unifyChatProviders.addProvider",
+    "onCommand:unifyChatProviders.removeProvider",
+    "onCommand:unifyChatProviders.selectProvider",
+    "onCommand:unifyChatProviders.selectModel"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "unifyChatProviders.addProvider",
+        "title": "Unify Chat Providers: Add Provider"
+      },
+      {
+        "command": "unifyChatProviders.removeProvider",
+        "title": "Unify Chat Providers: Remove Provider"
+      },
+      {
+        "command": "unifyChatProviders.selectProvider",
+        "title": "Unify Chat Providers: Select Provider"
+      },
+      {
+        "command": "unifyChatProviders.selectModel",
+        "title": "Unify Chat Providers: Select Model"
+      }
+    ],
+    "configuration": {
+      "title": "Unify Chat Providers",
+      "properties": {
+        "unifyChatProviders.endpoints": {
+          "type": "array",
+          "description": "List of chat provider endpoints to register.",
+          "items": {
+            "type": "object",
+            "required": ["name", "baseUrl", "models"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Endpoint type (e.g., anthropic-like).",
+                "default": "anthropic-like",
+                "enum": ["anthropic-like"]
+              },
+              "name": {
+                "type": "string",
+                "description": "Human friendly name for the provider."
+              },
+              "baseUrl": {
+                "type": "string",
+                "description": "Base URL for the provider's chat completions endpoint (e.g., https://api.example.com/v1/messages)."
+              },
+              "apiKey": {
+                "type": "string",
+                "description": "API key used for authorization (stored in workspace settings)."
+              },
+              "models": {
+                "type": "array",
+                "description": "List of available model identifiers for this provider.",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              },
+              "defaultModel": {
+                "type": "string",
+                "description": "Optional default model for this provider."
+              }
+            }
+          },
+          "default": []
+        },
+        "unifyChatProviders.activeProvider": {
+          "type": "string",
+          "description": "Name of the currently selected provider.",
+          "default": ""
+        },
+        "unifyChatProviders.activeModel": {
+          "type": "string",
+          "description": "Identifier for the currently selected model.",
+          "default": ""
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p .",
+    "watch": "tsc -watch -p ."
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.8",
+    "@types/vscode": "^1.88.0",
+    "tslib": "^2.6.2",
+    "typescript": "^5.4.0"
+  }
+}
