@@ -98,7 +98,9 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p .",
-    "watch": "tsc -watch -p ."
+    "watch": "tsc -watch -p .",
+    "test:build": "tsc -p tsconfig.tests.json",
+    "test": "npm run test:build && node --test \"out-tests/test/**/*.js\""
   },
   "devDependencies": {
     "@types/node": "^20.12.8",

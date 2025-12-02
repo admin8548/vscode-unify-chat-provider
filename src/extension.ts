@@ -5,7 +5,7 @@ const ENDPOINTS_KEY = `${CONFIG_NAMESPACE}.endpoints`;
 const ACTIVE_PROVIDER_KEY = `${CONFIG_NAMESPACE}.activeProvider`;
 const ACTIVE_MODEL_KEY = `${CONFIG_NAMESPACE}.activeModel`;
 
-interface ProviderConfig {
+export interface ProviderConfig {
   type?: string;
   name: string;
   baseUrl: string;
@@ -14,24 +14,24 @@ interface ProviderConfig {
   defaultModel?: string;
 }
 
-interface ExtensionConfiguration {
+export interface ExtensionConfiguration {
   endpoints: ProviderConfig[];
   activeProvider?: string;
   activeModel?: string;
 }
 
-interface ChatMessagePayload {
+export interface ChatMessagePayload {
   role: 'user' | 'assistant';
   content: string;
 }
 
-class ProviderStore {
+export class ProviderStore {
   get configuration(): ExtensionConfiguration {
-    const workspaceConfig = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
+    const workspaceConfig = vscode.workspace.getConfiguration(CONFIG_NAMESPACE) as any;
     return {
-      endpoints: workspaceConfig.get<ProviderConfig[]>('endpoints', []),
-      activeProvider: workspaceConfig.get<string>('activeProvider') ?? undefined,
-      activeModel: workspaceConfig.get<string>('activeModel') ?? undefined,
+      endpoints: (workspaceConfig.get?.('endpoints', []) ?? []) as ProviderConfig[],
+      activeProvider: (workspaceConfig.get?.('activeProvider') ?? undefined) as string | undefined,
+      activeModel: (workspaceConfig.get?.('activeModel') ?? undefined) as string | undefined,
     };
   }
 
@@ -52,7 +52,7 @@ class ProviderStore {
   }
 }
 
-class AnthropicLikeClient {
+export class AnthropicLikeClient {
   constructor(private readonly config: ProviderConfig) {}
 
   private buildMessages(messages: ChatMessagePayload[], prompt: string): unknown[] {
@@ -171,7 +171,7 @@ class AnthropicLikeClient {
   }
 }
 
-class ChatProviderService {
+export class ChatProviderService {
   private registration: vscode.Disposable | undefined;
   private readonly store = new ProviderStore();
 
@@ -182,7 +182,7 @@ class ChatProviderService {
     this.registerFromConfiguration();
 
     this.context.subscriptions.push(
-      vscode.workspace.onDidChangeConfiguration((event) => {
+      vscode.workspace.onDidChangeConfiguration((event: vscode.ConfigurationChangeEvent) => {
         if (event.affectsConfiguration(CONFIG_NAMESPACE)) {
           this.registerFromConfiguration();
         }
@@ -265,7 +265,9 @@ class ChatProviderService {
     };
 
     this.registration = (vscode.lm as any).registerChatParticipant('unifyChatProviders.participant', participant);
-    this.context.subscriptions.push(this.registration);
+    if (this.registration) {
+      this.context.subscriptions.push(this.registration);
+    }
   }
 
   private async addProvider(): Promise<void> {
@@ -299,7 +301,7 @@ class ChatProviderService {
 
     const models = modelsRaw
       .split(',')
-      .map((model) => model.trim())
+      .map((model: string) => model.trim())
       .filter(Boolean);
 
     if (models.length === 0) {
