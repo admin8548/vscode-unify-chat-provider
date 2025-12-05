@@ -69,11 +69,15 @@ export async function manageProviders(store: ConfigStore): Promise<void> {
       onDidTriggerItemButton: async (event, qp) => {
         const item = event.item;
         if (item.action !== 'provider' || !item.providerName) return;
+
+        qp.ignoreFocusOut = true;
         const confirm = await vscode.window.showWarningMessage(
           `Delete provider "${item.providerName}"?`,
           { modal: true },
           'Delete',
         );
+        qp.ignoreFocusOut = false;
+
         if (confirm !== 'Delete') return;
         await store.removeProvider(item.providerName);
         vscode.window.showInformationMessage(
@@ -603,7 +607,7 @@ function buildProviderListItems(store: ConfigStore): ProviderListItem[] {
     items.push({
       label: provider.name,
       description: provider.baseUrl,
-      detail: modelList ? `Models: ${modelList}` : undefined,
+      detail: modelList ? `Models: ${modelList}` : 'No models',
       action: 'provider',
       providerName: provider.name,
       buttons: [
