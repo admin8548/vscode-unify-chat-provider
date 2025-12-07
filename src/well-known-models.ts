@@ -9,6 +9,11 @@ export const WELL_KNOWN_MODELS: ModelConfig[] = [
     name: 'Claude Sonnet 4.5',
     maxInputTokens: 200000,
     maxOutputTokens: 64000,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+      budgetTokens: 16000,
+    },
     capabilities: {
       toolCalling: true,
       imageInput: true,
@@ -19,6 +24,7 @@ export const WELL_KNOWN_MODELS: ModelConfig[] = [
     name: 'Claude Haiku 4.5',
     maxInputTokens: 200000,
     maxOutputTokens: 64000,
+    stream: true,
     capabilities: {
       toolCalling: true,
       imageInput: true,
@@ -29,6 +35,11 @@ export const WELL_KNOWN_MODELS: ModelConfig[] = [
     name: 'Claude Opus 4.5',
     maxInputTokens: 200000,
     maxOutputTokens: 64000,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+      budgetTokens: 32000,
+    },
     capabilities: {
       toolCalling: true,
       imageInput: true,
@@ -39,6 +50,11 @@ export const WELL_KNOWN_MODELS: ModelConfig[] = [
     name: 'Claude Opus 4.1',
     maxInputTokens: 200000,
     maxOutputTokens: 32000,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+      budgetTokens: 10000,
+    },
     capabilities: {
       toolCalling: true,
       imageInput: true,
@@ -49,6 +65,11 @@ export const WELL_KNOWN_MODELS: ModelConfig[] = [
     name: 'Claude Sonnet 4',
     maxInputTokens: 200000,
     maxOutputTokens: 64000,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+      budgetTokens: 10000,
+    },
     capabilities: {
       toolCalling: true,
       imageInput: true,
@@ -59,6 +80,11 @@ export const WELL_KNOWN_MODELS: ModelConfig[] = [
     name: 'Claude Sonnet 3.7',
     maxInputTokens: 200000,
     maxOutputTokens: 64000,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+      budgetTokens: 10000,
+    },
     capabilities: {
       toolCalling: true,
       imageInput: true,
@@ -69,6 +95,11 @@ export const WELL_KNOWN_MODELS: ModelConfig[] = [
     name: 'Claude Opus 4',
     maxInputTokens: 200000,
     maxOutputTokens: 32000,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+      budgetTokens: 10000,
+    },
     capabilities: {
       toolCalling: true,
       imageInput: true,
@@ -79,6 +110,7 @@ export const WELL_KNOWN_MODELS: ModelConfig[] = [
     name: 'Claude Haiku 3.5',
     maxInputTokens: 200000,
     maxOutputTokens: 8000,
+    stream: true,
     capabilities: {
       toolCalling: true,
       imageInput: true,
@@ -89,6 +121,7 @@ export const WELL_KNOWN_MODELS: ModelConfig[] = [
     name: 'Claude Haiku 3',
     maxInputTokens: 200000,
     maxOutputTokens: 4000,
+    stream: true,
     capabilities: {
       toolCalling: true,
       imageInput: true,

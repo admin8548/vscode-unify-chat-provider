@@ -143,6 +143,7 @@ export class ConfigStore {
         return {
           id: obj.id,
           name: typeof obj.name === 'string' ? obj.name : undefined,
+          family: typeof obj.family === 'string' ? obj.family : undefined,
           maxInputTokens:
             typeof obj.maxInputTokens === 'number'
               ? obj.maxInputTokens

@@ -160,6 +160,10 @@
                           "type": "string",
                           "description": "Display name for the model."
                         },
+                        "family": {
+                          "type": "string",
+                          "description": "Model family (e.g., gpt-4, claude-3). Defaults to model ID."
+                        },
                         "maxInputTokens": {
                           "type": "number",
                           "description": "Maximum input tokens.",

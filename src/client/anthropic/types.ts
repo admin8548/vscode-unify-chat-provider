@@ -15,22 +15,41 @@ export interface AnthropicMessage {
  */
 export type AnthropicContentBlock =
   | AnthropicTextBlock
+  | AnthropicTextBlockWithCitations
   | AnthropicImageBlock
   | AnthropicToolUseBlock
-  | AnthropicToolResultBlock;
+  | AnthropicToolResultBlock
+  | AnthropicThinkingBlock
+  | AnthropicRedactedThinkingBlock
+  | AnthropicServerToolUseBlock
+  | AnthropicWebSearchToolResultBlock;
+
+/**
+ * Cache control definition for Anthropic prompt caching.
+ */
+export interface AnthropicCacheControl {
+  type: 'ephemeral';
+}
 
 export interface AnthropicTextBlock {
   type: 'text';
   text: string;
+  cache_control?: AnthropicCacheControl;
 }
 
 export interface AnthropicImageBlock {
   type: 'image';
-  source: {
-    type: 'base64';
-    media_type: string;
-    data: string;
-  };
+  source:
+    | {
+        type: 'base64';
+        media_type: string;
+        data: string;
+      }
+    | {
+        type: 'url';
+        url: string;
+      };
+  cache_control?: AnthropicCacheControl;
 }
 
 export interface AnthropicToolUseBlock {
@@ -38,6 +57,7 @@ export interface AnthropicToolUseBlock {
   id: string;
   name: string;
   input: Record<string, unknown>;
+  cache_control?: AnthropicCacheControl;
 }
 
 export interface AnthropicToolResultBlock {
@@ -45,6 +65,100 @@ export interface AnthropicToolResultBlock {
   tool_use_id: string;
   content: string | (AnthropicTextBlock | AnthropicImageBlock)[];
   is_error?: boolean;
+  cache_control?: AnthropicCacheControl;
+}
+
+export interface AnthropicThinkingBlock {
+  type: 'thinking';
+  thinking: string;
+  signature: string;
+}
+
+export interface AnthropicRedactedThinkingBlock {
+  type: 'redacted_thinking';
+  data: string;
+}
+
+/**
+ * Server tool use block for Anthropic server-side tools like web_search
+ */
+export interface AnthropicServerToolUseBlock {
+  type: 'server_tool_use';
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+}
+
+/**
+ * Web search result from Anthropic's web search tool
+ */
+export interface AnthropicWebSearchResult {
+  type: 'web_search_result';
+  url: string;
+  title: string;
+  encrypted_content: string;
+  page_age?: string;
+}
+
+/**
+ * Web search tool result error
+ */
+export interface AnthropicWebSearchToolResultError {
+  type: 'web_search_tool_result_error';
+  error_code:
+    | 'max_uses_exceeded'
+    | 'too_many_requests'
+    | 'invalid_input'
+    | 'query_too_long'
+    | 'unavailable';
+}
+
+/**
+ * Web search tool result block
+ */
+export interface AnthropicWebSearchToolResultBlock {
+  type: 'web_search_tool_result';
+  tool_use_id: string;
+  content: AnthropicWebSearchResult[] | AnthropicWebSearchToolResultError;
+}
+
+/**
+ * Citation location for web search results
+ */
+export interface AnthropicWebSearchResultLocation {
+  type: 'web_search_result_location';
+  url: string;
+  title: string;
+  encrypted_index: string;
+  cited_text: string;
+}
+
+/**
+ * Citation types - can be extended for other citation sources
+ */
+export type AnthropicCitation = AnthropicWebSearchResultLocation;
+
+/**
+ * Text block with citations
+ */
+export interface AnthropicTextBlockWithCitations {
+  type: 'text';
+  text: string;
+  citations?: AnthropicCitation[];
+  cache_control?: AnthropicCacheControl;
+}
+
+/**
+ * Anthropic system content block types
+ */
+export type AnthropicSystemContentBlock =
+  | AnthropicTextBlock
+  | AnthropicCacheControlSystemBlock;
+
+export interface AnthropicCacheControlSystemBlock {
+  type: 'text';
+  text: string;
+  cache_control: AnthropicCacheControl;
 }
 
 /**
@@ -55,8 +169,8 @@ export interface AnthropicRequest {
   messages: AnthropicMessage[];
   max_tokens: number;
   stream: boolean;
-  system?: string;
-  tools?: AnthropicTool[];
+  system?: string | AnthropicSystemContentBlock[];
+  tools?: AnthropicToolUnion[];
   temperature?: number;
   top_k?: number;
   top_p?: number;
@@ -71,6 +185,7 @@ export interface AnthropicRequest {
   tool_choice?: {
     type: 'auto' | 'any' | 'tool' | 'none';
     name?: string;
+    disable_parallel_tool_use?: boolean;
   };
 }
 
@@ -88,6 +203,45 @@ export interface AnthropicTool {
 }
 
 /**
+ * User location for web search localization
+ */
+export interface AnthropicWebSearchUserLocation {
+  type: 'approximate';
+  city?: string;
+  region?: string;
+  country?: string;
+  timezone?: string;
+}
+
+/**
+ * Anthropic web search server tool definition
+ */
+export interface AnthropicWebSearchTool {
+  type: 'web_search_20250305';
+  name: 'web_search';
+  max_uses?: number;
+  allowed_domains?: string[];
+  blocked_domains?: string[];
+  user_location?: AnthropicWebSearchUserLocation;
+}
+
+/**
+ * Anthropic memory tool definition
+ */
+export interface AnthropicMemoryTool {
+  type: 'memory_20250818';
+  name: 'memory';
+}
+
+/**
+ * Union type for all tool types in Anthropic API requests
+ */
+export type AnthropicToolUnion =
+  | AnthropicTool
+  | AnthropicWebSearchTool
+  | AnthropicMemoryTool;
+
+/**
  * Anthropic streaming event types
  */
 export type AnthropicStreamEvent =
@@ -99,13 +253,19 @@ export type AnthropicStreamEvent =
     }
   | { type: 'content_block_delta'; index: number; delta: AnthropicDelta }
   | { type: 'content_block_stop'; index: number }
-  | { type: 'message_delta'; delta: { stop_reason: string } }
+  | {
+      type: 'message_delta';
+      delta: { stop_reason: string };
+      usage?: { output_tokens?: number };
+    }
   | { type: 'message_stop' }
   | { type: 'error'; error: { type: string; message: string } };
 
 export type AnthropicDelta =
   | { type: 'text_delta'; text: string }
-  | { type: 'input_json_delta'; partial_json: string };
+  | { type: 'input_json_delta'; partial_json: string }
+  | { type: 'thinking_delta'; thinking: string }
+  | { type: 'signature_delta'; signature: string };
 
 /**
  * Anthropic ListModels API response types

@@ -1,10 +1,8 @@
 import type {
   CancellationToken,
-  LanguageModelChatMessage,
   LanguageModelChatRequestMessage,
-  LanguageModelChatTool,
-  LanguageModelTextPart,
-  LanguageModelToolCallPart,
+  LanguageModelResponsePart2,
+  ProvideLanguageModelChatResponseOptions,
 } from 'vscode';
 import type { ProviderType } from '.';
 
@@ -32,6 +30,8 @@ export interface ModelConfig {
   id: string;
   /** Display name for the model */
   name?: string;
+  /** Model family (e.g., gpt-4, claude-3) */
+  family?: string;
   /** Maximum input tokens */
   maxInputTokens?: number;
   /** Maximum output tokens */
@@ -51,6 +51,35 @@ export interface ModelConfig {
     type: 'enabled' | 'disabled';
     budgetTokens?: number;
   };
+  /**
+   * Enable interleaved thinking for tool use.
+   */
+  interleavedThinking?: boolean;
+  /**
+   * Use native web search tool.
+   */
+  webSearch?: {
+    /** Whether web search is enabled. Defaults to false. */
+    enabled?: boolean;
+    /** Maximum number of web searches per request. */
+    maxUses?: number;
+    /** Only include results from these domains. */
+    allowedDomains?: string[];
+    /** Never include results from these domains. */
+    blockedDomains?: string[];
+    /** User location for localizing search results. */
+    userLocation?: {
+      type: 'approximate';
+      city?: string;
+      region?: string;
+      country?: string;
+      timezone?: string;
+    };
+  };
+  /**
+   * Use native memory tool.
+   */
+  memoryTool?: boolean;
 }
 
 /**
@@ -78,28 +107,11 @@ export interface ApiProvider {
    * Stream a chat response
    */
   streamChat(
-    messages: unknown[],
-    modelId: string,
-    options: {
-      maxTokens?: number;
-      system?: string;
-      tools?: unknown[];
-    },
+    model: ModelConfig,
+    messages: readonly LanguageModelChatRequestMessage[],
+    options: ProvideLanguageModelChatResponseOptions,
     token: CancellationToken,
-  ): AsyncGenerator<LanguageModelTextPart | LanguageModelToolCallPart>;
-
-  /**
-   * Convert VS Code messages to the client's format
-   */
-  convertMessages(messages: readonly LanguageModelChatRequestMessage[]): {
-    system?: string;
-    messages: unknown[];
-  };
-
-  /**
-   * Convert VS Code tools to the client's format
-   */
-  convertTools(tools: readonly LanguageModelChatTool[]): unknown[];
+  ): AsyncGenerator<LanguageModelResponsePart2>;
 
   /**
    * Estimate token count for text

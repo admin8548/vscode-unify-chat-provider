@@ -48,7 +48,7 @@ export class UnifyChatService implements vscode.LanguageModelChatProvider {
     return {
       id: modelId,
       name: model.name ?? model.id,
-      family: provider.name,
+      family: model.family ?? model.id,
       version: '1.0.0',
       maxInputTokens: model.maxInputTokens ?? DEFAULT_MAX_INPUT_TOKENS,
       maxOutputTokens: model.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
@@ -149,26 +149,8 @@ export class UnifyChatService implements vscode.LanguageModelChatProvider {
     const { provider, model: modelConfig } = found;
     const client = this.getClient(provider);
 
-    // Convert messages to provider-specific format
-    const { system, messages: providerMessages } =
-      client.convertMessages(messages);
-
-    // Convert tools if provided
-    const tools = options.tools
-      ? client.convertTools(options.tools)
-      : undefined;
-
     // Stream the response
-    const stream = client.streamChat(
-      providerMessages,
-      modelConfig.id,
-      {
-        maxTokens: modelConfig.maxOutputTokens,
-        system,
-        tools,
-      },
-      token,
-    );
+    const stream = client.streamChat(modelConfig, messages, options, token);
 
     for await (const part of stream) {
       if (token.isCancellationRequested) {

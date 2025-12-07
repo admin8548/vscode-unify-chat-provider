@@ -489,6 +489,15 @@ async function editModelField(
       if (val !== undefined) draft.name = val.trim() || undefined;
       break;
     }
+    case 'family': {
+      const val = await showInput({
+        prompt: 'Enter model family (leave blank to use model ID)',
+        placeHolder: 'e.g., gpt-4, claude-3',
+        value: draft.family || '',
+      });
+      if (val !== undefined) draft.family = val.trim() || undefined;
+      break;
+    }
     case 'maxInputTokens': {
       const val = await showInput({
         prompt: `Enter max input tokens (leave blank for defaults: ${DEFAULT_MAX_INPUT_TOKENS.toLocaleString()})`,
@@ -683,13 +692,14 @@ async function editModelField(
       } else {
         const budgetStr = await showInput({
           prompt: 'Enter budget tokens for thinking',
-          placeHolder: 'e.g., 1024',
-          value: draft.thinking?.budgetTokens?.toString() || '1024',
+          placeHolder: 'Leave blank for default',
+          value: draft.thinking?.budgetTokens?.toString(),
           validateInput: validatePositiveIntegerOrEmpty,
         });
-        if (budgetStr !== undefined) {
-          draft.thinking = { type: 'enabled', budgetTokens: Number(budgetStr) };
-        }
+        draft.thinking = {
+          type: 'enabled',
+          budgetTokens: budgetStr ? Number(budgetStr) : undefined,
+        };
       }
       break;
     }
@@ -853,6 +863,11 @@ function buildModelFormItems(
       field: 'name',
     },
     {
+      label: '$(versions) Model Family',
+      description: draft.family || '(optional)',
+      field: 'family',
+    },
+    {
       label: '',
       kind: vscode.QuickPickItemKind.Separator,
       description: 'Detailed Fields',
@@ -982,6 +997,7 @@ function normalizeModelDraft(draft: ModelConfig): ModelConfig {
   return {
     id: draft.id.trim(),
     name: draft.name?.trim() || undefined,
+    family: draft.family?.trim() || undefined,
     maxInputTokens: draft.maxInputTokens,
     maxOutputTokens: draft.maxOutputTokens,
     capabilities: draft.capabilities ? { ...draft.capabilities } : undefined,
@@ -997,6 +1013,7 @@ function cloneModels(models: ModelConfig[]): ModelConfig[] {
   return models.map((m) => ({
     id: m.id,
     name: m.name,
+    family: m.family,
     maxInputTokens: m.maxInputTokens,
     maxOutputTokens: m.maxOutputTokens,
     capabilities: m.capabilities ? { ...m.capabilities } : undefined,
