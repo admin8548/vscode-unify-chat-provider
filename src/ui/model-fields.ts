@@ -11,7 +11,11 @@ import {
   validateModelIdUnique,
   validatePositiveIntegerOrEmpty,
 } from './form-utils';
-import { hasVersion, generateAutoVersionedId } from '../model-id-utils';
+import {
+  hasVersion,
+  generateAutoVersionedId,
+  MODEL_VERSION_DELIMITER,
+} from '../model-id-utils';
 
 /**
  * Context for model form fields.
@@ -32,66 +36,58 @@ export const modelFormSchema: FormSchema<ModelConfig> = {
     { id: 'parameters', label: 'Parameters' },
   ],
   fields: [
-    // ID field (custom to handle auto-versioning dialog on edit)
     {
       key: 'id',
-      type: 'custom',
+      type: 'text',
       label: 'Model ID',
       icon: 'tag',
       section: 'primary',
-      edit: async (draft, context) => {
+      prompt: 'Enter the model ID',
+      placeholder: 'e.g., claude-sonnet-4-20250514',
+      required: true,
+      validate: (input, _draft, context) => {
         const ctx = context as ModelFieldContext;
+        const trimmed = input.trim();
+        const err = validateModelIdUnique(input, ctx.models, ctx.originalId);
+        if (err) {
+          if (trimmed === '' || hasVersion(trimmed)) {
+            return err;
+          }
+        }
+        if (trimmed.endsWith(MODEL_VERSION_DELIMITER)) {
+          return `Model ID cannot end with '${MODEL_VERSION_DELIMITER}'`;
+        }
+        return null;
+      },
+      onWillAccept: async (input, _draft, context) => {
+        const ctx = context as ModelFieldContext;
+        const trimmed = input.trim();
+        if (!trimmed) return false;
 
-        const value = await showInput({
-          prompt: 'Enter the model ID',
-          placeHolder: 'e.g., claude-sonnet-4-20250514',
-          value: draft.id,
-          validateInput: (input) => {
-            const trimmed = input.trim();
-            if (!trimmed) return 'Model ID is required';
-            if (ctx.originalId && trimmed === ctx.originalId) return null;
-            // Only show error for duplicate versioned IDs
-            if (
-              validateModelIdUnique(trimmed, ctx.models, ctx.originalId) &&
-              hasVersion(trimmed)
-            ) {
-              return 'A model with this ID already exists';
-            }
-            return null;
-          },
-        });
-
-        if (value === undefined) return; // User cancelled
-
-        const trimmedId = value.trim();
-        if (!trimmedId) return;
-
-        // Check if this exact ID already exists (and it's not the original)
-        if (validateModelIdUnique(trimmedId, ctx.models, ctx.originalId)) {
+        if (validateModelIdUnique(trimmed, ctx.models, ctx.originalId)) {
           // If ID already has a version, the input validation already blocked it
           // This handles the case where ID has no version - show auto-version dialog
-          if (!hasVersion(trimmedId)) {
+          if (!hasVersion(trimmed)) {
             const autoVersionedId = generateAutoVersionedId(
-              trimmedId,
+              trimmed,
               ctx.models,
             );
             const choice = await vscode.window.showWarningMessage(
-              `A model with ID '${trimmedId}' already exists.\nAdd version suffix? '${trimmedId}' → '${autoVersionedId}'`,
+              `A model with the ID '${trimmed}' already exists.\nWould you like to add a version suffix to '${autoVersionedId}'?`,
               { modal: true },
               'Yes',
-              'No',
             );
 
             if (choice === 'Yes') {
-              draft.id = autoVersionedId;
+              return { value: autoVersionedId };
             }
-            // If No or cancelled, don't update draft.id (keep original)
-            return;
+            // If cancelled, keep input open
+            return false;
           }
         }
-
-        draft.id = trimmedId;
+        return true;
       },
+      transform: (value) => value.trim() || undefined,
       getDescription: (draft) => draft.id || '(required)',
     },
     // Name field

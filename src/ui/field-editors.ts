@@ -59,7 +59,10 @@ async function editTextField<T>(
     value: currentValue,
     password: field.password,
     validateInput: field.validate
-      ? (v) => field.validate!(v, draft, context)
+      ? (v: string) => field.validate!(v, draft, context)
+      : undefined,
+    onWillAccept: field.onWillAccept
+      ? (v) => field.onWillAccept!(v, draft, context)
       : undefined,
   });
 

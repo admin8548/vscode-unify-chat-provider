@@ -23,8 +23,18 @@ export interface TextFieldDef<T, K extends keyof T> extends BaseFieldDef<T, K> {
   placeholder?: string;
   password?: boolean;
   required?: boolean;
-  /** Custom validation function */
+  /** Custom validation function (sync, runs on every keystroke) */
   validate?: (value: string, draft: T, context: FieldContext) => string | null;
+  /**
+   * Called when user presses Enter. Return false to keep the input box open.
+   * Can be used for async validation or confirmation dialogs.
+   * Return { value: string } to override the accepted value.
+   */
+  onWillAccept?: (
+    value: string,
+    draft: T,
+    context: FieldContext,
+  ) => Promise<boolean | { value: string } | void> | boolean | { value: string } | void;
   /** Transform the value before storing */
   transform?: (value: string) => string | undefined;
   /** Get the current value for display */

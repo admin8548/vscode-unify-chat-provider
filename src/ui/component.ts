@@ -78,20 +78,102 @@ export async function pickQuickItem<T extends vscode.QuickPickItem>(
   });
 }
 
+/**
+ * Show an input box with optional async validation on accept.
+ * If onWillAccept returns false, the input box stays open with the user's input preserved.
+ * If onWillAccept returns { value: string }, that value is used instead of the input value.
+ */
 export async function showInput(options: {
   prompt: string;
   value?: string;
   placeHolder?: string;
   password?: boolean;
   validateInput?: (s: string) => string | null;
+  /**
+   * Called when user presses Enter. Return false to keep the input box open.
+   * Return { value: string } to override the accepted value.
+   * Can be used for async validation or confirmation dialogs.
+   */
+  onWillAccept?: (
+    value: string,
+  ) =>
+    | Promise<boolean | { value: string } | void>
+    | boolean
+    | { value: string }
+    | void;
 }): Promise<string | undefined> {
-  const { prompt, value, placeHolder, password, validateInput } = options;
-  return vscode.window.showInputBox({
-    prompt,
-    value,
-    placeHolder,
-    password,
-    validateInput,
+  const { prompt, value, placeHolder, password, validateInput, onWillAccept } =
+    options;
+
+  const inputBox = vscode.window.createInputBox();
+  inputBox.prompt = prompt;
+  inputBox.value = value ?? '';
+  inputBox.placeholder = placeHolder;
+  inputBox.password = password ?? false;
+
+  let resolved = false;
+
+  return new Promise<string | undefined>((resolve) => {
+    const finish = (result: string | undefined) => {
+      if (resolved) return;
+      resolved = true;
+      resolve(result);
+    };
+
+    // Sync validation on every keystroke
+    inputBox.onDidChangeValue((text) => {
+      if (validateInput) {
+        const error = validateInput(text);
+        inputBox.validationMessage = error ?? undefined;
+      }
+    });
+
+    // Trigger initial validation
+    if (validateInput && inputBox.value) {
+      const error = validateInput(inputBox.value);
+      inputBox.validationMessage = error ?? undefined;
+    }
+
+    inputBox.onDidAccept(async () => {
+      // Don't accept if there's a sync validation error
+      if (inputBox.validationMessage) {
+        return;
+      }
+
+      const currentValue = inputBox.value;
+      let finalValue = currentValue;
+
+      // Run async validation/confirmation
+      if (onWillAccept) {
+        try {
+          inputBox.ignoreFocusOut = true;
+          const result = await onWillAccept(currentValue);
+          inputBox.ignoreFocusOut = false;
+          if (result === false) {
+            // Keep input box open with user's input preserved
+            return;
+          }
+          if (typeof result === 'object' && 'value' in result) {
+            // Use the override value
+            finalValue = result.value;
+          }
+        } catch {
+          // On error, keep input open
+          return;
+        }
+      }
+
+      // Accept and close
+      finish(finalValue);
+      inputBox.hide();
+    });
+
+    inputBox.onDidHide(() => {
+      finish(undefined);
+      inputBox.dispose();
+    });
+
+    inputBox.show();
   });
 }
 
