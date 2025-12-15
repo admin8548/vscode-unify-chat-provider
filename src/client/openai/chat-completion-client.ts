@@ -4,7 +4,7 @@ import {
   CancellationToken,
 } from 'vscode';
 import { RequestLogger } from '../../logger';
-import { PerformanceTrace } from '../../types';
+import { PerformanceTrace, ThinkingBlockMetadata } from '../../types';
 import { ApiProvider, ModelConfig, ProviderConfig } from '../interface';
 import OpenAI from 'openai';
 import {
@@ -164,6 +164,16 @@ export class OpenAIChatCompletionProvider implements ApiProvider {
                         tool_calls:
                           result.parts as ChatCompletionMessageToolCall[],
                       }
+                    : result.isThinking
+                    ? {
+                        role: 'assistant',
+                        reasoning_content:
+                          typeof result.parts === 'string'
+                            ? result.parts
+                            : (result.parts as ChatCompletionContentPartText[])
+                                .map((v) => v.text)
+                                .join(''),
+                      }
                     : {
                         role: 'assistant',
                         content:
@@ -187,6 +197,8 @@ export class OpenAIChatCompletionProvider implements ApiProvider {
       outMessages[index] = raw;
     }
 
+    // TODO 将连续的不同种类的 Assistant 消息尽量合并为一条消息（比如 content, reasoning_content, tool_calls 可以合并，但是 content, content 则不可以合并，(content and reasoning_content), tool_calls 可以合并）
+
     return outMessages;
   }
 
@@ -198,6 +210,7 @@ export class OpenAIChatCompletionProvider implements ApiProvider {
         parts:
           | (ChatCompletionContentPart | ChatCompletionMessageToolCall)[]
           | string;
+        isThinking?: boolean;
         isToolCall?: boolean;
         isToolResult?: boolean;
         toolResultId?: string;
@@ -217,35 +230,28 @@ export class OpenAIChatCompletionProvider implements ApiProvider {
       if (role !== vscode.LanguageModelChatMessageRole.Assistant) {
         throw new Error('Thinking parts can only appear in assistant messages');
       }
-      // The official version of the API does not support processing or considering any content.
-      //   const metadata = part.metadata as ThinkingBlockMetadata | undefined;
-      //   if (metadata?.redactedData) {
-      //     // from VSCode.
-      //     return [
-      //       {
-      //         type: 'redacted_thinking',
-      //         data: metadata.redactedData,
-      //       },
-      //     ];
-      //   } else if (metadata?._completeThinking) {
-      //     // from VSCode.
-      //     return [
-      //       {
-      //         type: 'thinking',
-      //         thinking: metadata._completeThinking,
-      //         signature: metadata.signature || '',
-      //       },
-      //     ];
-      //   } else {
-      //     const values =
-      //       typeof part.value === 'string' ? [part.value] : part.value;
-      //     return values.map((v) => ({
-      //       type: 'thinking',
-      //       thinking: v,
-      //       signature: '',
-      //     }));
-      //   }
-      return undefined;
+      const metadata = part.metadata as ThinkingBlockMetadata | undefined;
+      if (metadata?.redactedData) {
+        // from VSCode.
+        return {
+          parts: metadata.redactedData,
+          isThinking: true,
+        };
+      } else if (metadata?._completeThinking) {
+        // from VSCode.
+        return {
+          parts: metadata._completeThinking,
+          isThinking: true,
+        };
+      } else {
+        return {
+          parts:
+            typeof part.value === 'string'
+              ? part.value
+              : part.value.map((v) => ({ type: 'text', text: v })),
+          isThinking: true,
+        };
+      }
     } else if (part instanceof vscode.LanguageModelDataPart) {
       if (isCacheControlMarker(part)) {
         // ignore it, just use the officially recommended caching strategy.
@@ -493,10 +499,16 @@ export class OpenAIChatCompletionProvider implements ApiProvider {
     }
 
     const raw = choice.message;
-    const { content, tool_calls } = choice.message;
+    const { content, reasoning_content, tool_calls } = choice.message;
 
     if (content) {
       yield new vscode.LanguageModelTextPart(content);
+    }
+
+    if (reasoning_content) {
+      yield new vscode.LanguageModelThinkingPart(reasoning_content, undefined, {
+        _completeThinking: reasoning_content,
+      } satisfies ThinkingBlockMetadata);
     }
 
     if (tool_calls) {
@@ -574,7 +586,7 @@ export class OpenAIChatCompletionProvider implements ApiProvider {
         continue;
       }
 
-      const { content } = choice.delta;
+      const { content, reasoning_content } = choice.delta;
 
       recordFirstToken();
 
@@ -582,9 +594,14 @@ export class OpenAIChatCompletionProvider implements ApiProvider {
         yield new vscode.LanguageModelTextPart(content);
       }
 
+      if (reasoning_content) {
+        yield new vscode.LanguageModelThinkingPart(reasoning_content);
+      }
+
       if (choice.finish_reason) {
-        const message = snapshot.choices[choice.index].message;
-        const tool_calls = message.tool_calls;
+        const { content, reasoning_content, tool_calls, refusal } =
+          snapshot.choices[choice.index].message;
+
         if (tool_calls && tool_calls.length > 0) {
           for (const call of tool_calls) {
             if (call.type === 'function') {
@@ -596,11 +613,18 @@ export class OpenAIChatCompletionProvider implements ApiProvider {
             }
           }
         }
+
+        if (reasoning_content) {
+          yield new vscode.LanguageModelThinkingPart('', undefined, {
+            _completeThinking: reasoning_content,
+          } satisfies ThinkingBlockMetadata);
+        }
+
         yield encodeStatefulMarkerPart<ChatCompletionMessage>({
-          content: message.content ?? null,
-          refusal: message.refusal ?? null,
+          content: content ?? null,
+          refusal: refusal ?? null,
           role: 'assistant',
-          tool_calls: message.tool_calls ?? undefined,
+          tool_calls: tool_calls ?? undefined,
         });
       }
     }
@@ -668,15 +692,21 @@ export class OpenAIChatCompletionProvider implements ApiProvider {
 
       if (!delta) continue; // Shouldn't happen; just in case.
 
-      const { content, refusal, role, tool_calls } = delta;
+      const { content, reasoning_content, refusal, role, tool_calls } = delta;
 
       if (refusal) {
         choice.message.refusal = (choice.message.refusal || '') + refusal;
       }
 
       if (role) choice.message.role = role;
+
       if (content) {
         choice.message.content = (choice.message.content || '') + content;
+      }
+
+      if (reasoning_content) {
+        choice.message.reasoning_content =
+          (choice.message.reasoning_content || '') + reasoning_content;
       }
 
       if (tool_calls) {
