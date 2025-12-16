@@ -34,7 +34,6 @@ import { DEFAULT_MAX_OUTPUT_TOKENS } from '../../defaults';
 import { PerformanceTrace, ThinkingBlockMetadata } from '../../types';
 import { FeatureId, isFeatureSupported } from '../../features';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { WELL_KNOWN_MODELS } from '../../well-known-models';
 import { TracksToolInput } from '@anthropic-ai/sdk/lib/BetaMessageStream';
 
 /**
@@ -1175,13 +1174,10 @@ export class AnthropicProvider implements ApiProvider {
         );
 
         for (const model of page.data) {
-          const wellKnowns = WELL_KNOWN_MODELS.find((v) => v.id === model.id);
-          allModels.push(
-            Object.assign(wellKnowns ?? {}, {
-              id: model.id,
-              name: model.display_name,
-            }),
-          );
+          allModels.push({
+            id: model.id,
+            name: model.display_name,
+          });
         }
 
         afterId = page.has_more && page.last_id ? page.last_id : undefined;

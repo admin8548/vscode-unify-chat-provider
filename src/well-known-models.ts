@@ -1,9 +1,17 @@
 import { ModelConfig } from './client/interface';
 
 /**
+ * Well-known model configuration with additional matching options
+ */
+interface WellKnownModelConfig extends ModelConfig {
+  /** Alternative IDs for matching (e.g., aliases or legacy IDs) */
+  alternativeIds?: string[];
+}
+
+/**
  * Well-known models configuration
  */
-export const WELL_KNOWN_MODELS: ModelConfig[] = [
+export const WELL_KNOWN_MODELS: WellKnownModelConfig[] = [
   {
     id: 'claude-sonnet-4-5',
     name: 'Claude Sonnet 4.5',
@@ -431,3 +439,109 @@ export const WELL_KNOWN_MODELS: ModelConfig[] = [
     temperature: 0.6,
   },
 ];
+
+/**
+ * Check if two IDs match using includes-based comparison
+ * Returns the matched ID length if matched, 0 otherwise
+ */
+function getMatchScore(apiModelId: string, knownId: string): number {
+  const lowerApi = apiModelId.toLowerCase();
+  const lowerKnown = knownId.toLowerCase();
+
+  // Exact match gets highest score
+  if (lowerApi === lowerKnown) {
+    return Infinity;
+  }
+
+  // Check if one includes the other
+  if (lowerApi.includes(lowerKnown) || lowerKnown.includes(lowerApi)) {
+    // Score based on the length of the matched known ID
+    // Longer matches are more specific and should be preferred
+    return knownId.length;
+  }
+
+  return 0;
+}
+
+/**
+ * Get all IDs to match against for a model (primary ID + alternativeIds)
+ */
+function getAllMatchableIds(model: WellKnownModelConfig): string[] {
+  const ids = [model.id];
+  if (model.alternativeIds) {
+    ids.push(...model.alternativeIds);
+  }
+  return ids;
+}
+
+/**
+ * Calculate the best match score for a model against an API model ID
+ * Considers both primary ID and alternativeIds
+ */
+function calculateBestMatchScore(
+  apiModelId: string,
+  model: WellKnownModelConfig,
+): number {
+  const allIds = getAllMatchableIds(model);
+  let bestScore = 0;
+
+  for (const id of allIds) {
+    const score = getMatchScore(apiModelId, id);
+    if (score > bestScore) {
+      bestScore = score;
+    }
+  }
+
+  return bestScore;
+}
+
+/**
+ * Find the best matching well-known model for a given API model ID
+ * Uses includes-based filtering and selects the most similar match
+ * Supports matching against both primary ID and alternativeIds
+ */
+export function findBestMatchingWellKnownModel(
+  apiModelId: string,
+): ModelConfig | undefined {
+  // Filter models that have at least one matching ID
+  const candidates = WELL_KNOWN_MODELS.filter(
+    (model) => calculateBestMatchScore(apiModelId, model) > 0,
+  );
+
+  if (candidates.length === 0) {
+    return undefined;
+  }
+
+  // Find the most similar match (highest score)
+  let bestMatch = candidates[0];
+  let bestScore = calculateBestMatchScore(apiModelId, bestMatch);
+
+  for (let i = 1; i < candidates.length; i++) {
+    const score = calculateBestMatchScore(apiModelId, candidates[i]);
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = candidates[i];
+    }
+  }
+
+  return bestMatch;
+}
+
+/**
+ * Merge API model with well-known model configuration
+ * API model fields take precedence over well-known fields
+ */
+export function mergeWithWellKnownModel(apiModel: ModelConfig): ModelConfig {
+  const wellKnown = findBestMatchingWellKnownModel(apiModel.id);
+  return Object.assign({}, wellKnown ?? {}, apiModel);
+}
+
+/**
+ * Merge API model with well-known model configuration
+ * API model fields take precedence over well-known fields
+ */
+export function mergeWithWellKnownModels(
+  apiModels: ModelConfig[],
+): ModelConfig[] {
+  return apiModels.map((model) => mergeWithWellKnownModel(model));
+}

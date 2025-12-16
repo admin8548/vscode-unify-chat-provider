@@ -18,7 +18,6 @@ import {
   normalizeBaseUrlInput,
   normalizeImageMimeType,
 } from '../../utils';
-import { WELL_KNOWN_MODELS } from '../../well-known-models';
 import * as vscode from 'vscode';
 import {
   ChatCompletion,
@@ -939,8 +938,7 @@ export class OpenAIChatCompletionProvider implements ApiProvider {
     const client = this.createClient();
     const page = await client.models.list();
     for await (const model of page) {
-      const wellKnowns = WELL_KNOWN_MODELS.find((v) => v.id === model.id);
-      result.push(Object.assign(wellKnowns ?? {}, { id: model.id }));
+      result.push({ id: model.id });
     }
     return result;
   }

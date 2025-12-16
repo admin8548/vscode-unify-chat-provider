@@ -1,7 +1,10 @@
 import * as vscode from 'vscode';
 import { createProvider } from '../client';
 import type { ModelConfig } from '../client/interface';
-import { WELL_KNOWN_MODELS } from '../well-known-models';
+import {
+  mergeWithWellKnownModels,
+  WELL_KNOWN_MODELS,
+} from '../well-known-models';
 import { generateAutoVersionedId } from '../model-id-utils';
 import {
   confirmDelete,
@@ -166,7 +169,8 @@ export async function manageModelList(
       const addedModels = await showModelSelectionPicker({
         title: 'Add From Official Model List',
         existingModels: models,
-        fetchModels: async () => client.getAvailableModels!(),
+        fetchModels: async () =>
+          mergeWithWellKnownModels(await client.getAvailableModels!()),
       });
       if (addedModels) {
         models.push(...addedModels);
