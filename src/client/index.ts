@@ -1,12 +1,13 @@
 import { AnthropicProvider } from './anthropic/client';
 import { OpenAIChatCompletionProvider } from './openai/chat-completion-client';
+import { OpenAIResponsesProvider } from './openai/responses-client';
 import type {
   ApiProvider,
   ProviderConfig,
   ProviderDefinition,
 } from './interface';
 
-export const PROVIDERS: Record<ProviderType, ProviderDefinition> = {
+export const PROVIDER_TYPES: Record<ProviderType, ProviderDefinition> = {
   anthropic: {
     type: 'anthropic',
     label: 'Anthropic Messages API',
@@ -21,12 +22,19 @@ export const PROVIDERS: Record<ProviderType, ProviderDefinition> = {
     supportMimics: [],
     class: OpenAIChatCompletionProvider,
   },
+  'openai-responses': {
+    type: 'openai-responses',
+    label: 'OpenAI Responses API',
+    description: '/v1/responses',
+    supportMimics: [],
+    class: OpenAIResponsesProvider,
+  },
 };
 
 /**
  * Valid provider types
  */
-export const PROVIDER_TYPES = Object.keys(PROVIDERS) as ProviderType[];
+export const PROVIDER_KEYS = Object.keys(PROVIDER_TYPES) as ProviderType[];
 
 export const MIMIC_LABELS: Record<Mimic, string> = {
   'claude-code': 'Claude Code',
@@ -35,7 +43,10 @@ export const MIMIC_LABELS: Record<Mimic, string> = {
 /**
  * Supported provider types
  */
-export type ProviderType = 'anthropic' | 'openai-chat-completion';
+export type ProviderType =
+  | 'anthropic'
+  | 'openai-chat-completion'
+  | 'openai-responses';
 
 /**
  * Provider mimic options
@@ -43,7 +54,7 @@ export type ProviderType = 'anthropic' | 'openai-chat-completion';
 export type Mimic = 'claude-code';
 
 export function createProvider(provider: ProviderConfig): ApiProvider {
-  const definition = PROVIDERS[provider.type];
+  const definition = PROVIDER_TYPES[provider.type];
   if (!definition) {
     throw new Error(`Unsupported provider type: ${provider.type}`);
   }

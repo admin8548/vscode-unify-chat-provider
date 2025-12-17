@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import type { PerformanceTrace } from './types';
 import type { BetaUsage } from '@anthropic-ai/sdk/resources/beta/messages';
 import type { CompletionUsage } from 'openai/resources/completions';
+import type { ResponseUsage } from 'openai/resources/responses/responses';
 
 const CHANNEL_NAME = 'Unify Chat Provider';
 
@@ -216,10 +217,10 @@ export class RequestLogger {
    * Log usage information from provider. Always logged.
    * @param usage Raw usage object from provider (will be JSON stringified)
    */
-  usage(usage: BetaUsage | CompletionUsage): void {
+  usage(usage: BetaUsage | CompletionUsage | ResponseUsage): void {
     this.ch.info(`[${this.requestId}] Usage: ${JSON.stringify(usage)}`);
 
-    if ('input_tokens' in usage) {
+    if ('cache_read_input_tokens' in usage) {
       const cacheRead = usage.cache_read_input_tokens ?? 0;
       const cacheCreation = usage.cache_creation_input_tokens ?? 0;
       const uncachedInputTokens = usage.input_tokens;
@@ -228,6 +229,19 @@ export class RequestLogger {
         totalInput > 0 ? ((cacheRead / totalInput) * 100).toFixed(1) : '0.0';
       this.ch.info(
         `[${this.requestId}] Cache: ${cacheRead} read, ${cacheCreation} created, ${uncachedInputTokens} uncached (${cacheHitRatio}% hit ratio)`,
+      );
+      return;
+    } else if ('input_tokens_details' in usage) {
+      const cachedTokens = usage.input_tokens_details.cached_tokens ?? 0;
+      const inputTokens = usage.input_tokens;
+      const uncachedTokens = Math.max(inputTokens - cachedTokens, 0);
+      const cacheHitRatio =
+        inputTokens > 0
+          ? ((cachedTokens / inputTokens) * 100).toFixed(1)
+          : '0.0';
+
+      this.ch.info(
+        `[${this.requestId}] Cache: ${cachedTokens} cached, ${uncachedTokens} uncached (${cacheHitRatio}% hit ratio)`,
       );
       return;
     } else if ('total_tokens' in usage) {

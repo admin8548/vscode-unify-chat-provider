@@ -84,10 +84,13 @@ export async function pickQuickItem<T extends vscode.QuickPickItem>(
  * If onWillAccept returns { value: string }, that value is used instead of the input value.
  */
 export async function showInput(options: {
+  title?: string;
   prompt: string;
   value?: string;
   placeHolder?: string;
   password?: boolean;
+  ignoreFocusOut?: boolean;
+  showBackButton?: boolean;
   validateInput?: (s: string) => string | null;
   /**
    * Called when user presses Enter. Return false to keep the input box open.
@@ -102,14 +105,52 @@ export async function showInput(options: {
     | { value: string }
     | void;
 }): Promise<string | undefined> {
-  const { prompt, value, placeHolder, password, validateInput, onWillAccept } =
-    options;
+  const {
+    title,
+    prompt,
+    value,
+    placeHolder,
+    password,
+    ignoreFocusOut,
+    showBackButton,
+    validateInput,
+    onWillAccept,
+  } = options;
+
+  const isPasswordInput = password ?? false;
+  const hasBackButton = showBackButton ?? false;
 
   const inputBox = vscode.window.createInputBox();
+  inputBox.title = title;
   inputBox.prompt = prompt;
   inputBox.value = value ?? '';
   inputBox.placeholder = placeHolder;
-  inputBox.password = password ?? false;
+  inputBox.password = isPasswordInput;
+  inputBox.ignoreFocusOut = ignoreFocusOut ?? false;
+
+  const showValueButton: vscode.QuickInputButton = {
+    iconPath: new vscode.ThemeIcon('eye'),
+    tooltip: 'Show',
+  };
+  const hideValueButton: vscode.QuickInputButton = {
+    iconPath: new vscode.ThemeIcon('eye-closed'),
+    tooltip: 'Hide',
+  };
+
+  const updateButtons = () => {
+    const buttons: vscode.QuickInputButton[] = [];
+    if (hasBackButton) {
+      buttons.push(vscode.QuickInputButtons.Back);
+    }
+    if (isPasswordInput) {
+      buttons.push(inputBox.password ? showValueButton : hideValueButton);
+    }
+    inputBox.buttons = buttons;
+  };
+
+  if (hasBackButton || isPasswordInput) {
+    updateButtons();
+  }
 
   let resolved = false;
 
@@ -119,6 +160,24 @@ export async function showInput(options: {
       resolved = true;
       resolve(result);
     };
+
+    if (hasBackButton || isPasswordInput) {
+      inputBox.onDidTriggerButton((button) => {
+        if (button === vscode.QuickInputButtons.Back) {
+          finish(undefined);
+          inputBox.hide();
+          return;
+        }
+
+        if (
+          isPasswordInput &&
+          (button === showValueButton || button === hideValueButton)
+        ) {
+          inputBox.password = !inputBox.password;
+          updateButtons();
+        }
+      });
+    }
 
     // Sync validation on every keystroke
     inputBox.onDidChangeValue((text) => {

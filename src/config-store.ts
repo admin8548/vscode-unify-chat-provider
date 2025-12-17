@@ -7,7 +7,7 @@ import {
 } from './config-ops';
 import { normalizeBaseUrlInput } from './utils';
 import { ProviderConfig, ModelConfig } from './client/interface';
-import { Mimic, PROVIDER_TYPES, PROVIDERS, ProviderType } from './client';
+import { Mimic, PROVIDER_KEYS, PROVIDER_TYPES, ProviderType } from './client';
 
 const CONFIG_NAMESPACE = 'unifyChatProvider';
 
@@ -100,7 +100,7 @@ export class ConfigStore {
     // Parse and validate type
     if (
       typeof obj.type !== 'string' ||
-      !PROVIDER_TYPES.includes(obj.type as ProviderType)
+      !PROVIDER_KEYS.includes(obj.type as ProviderType)
     ) {
       return null;
     }
@@ -116,14 +116,17 @@ export class ConfigStore {
     mergePartialFromRecordByKeys(
       provider,
       obj,
-      withoutKeys(
-        PROVIDER_CONFIG_KEYS,
-        ['type', 'name', 'baseUrl', 'models'] as const,
-      ),
+      withoutKeys(PROVIDER_CONFIG_KEYS, [
+        'type',
+        'name',
+        'baseUrl',
+        'models',
+      ] as const),
     );
 
-    const supportMimics = PROVIDERS[type].supportMimics;
-    provider.apiKey = typeof provider.apiKey === 'string' ? provider.apiKey : undefined;
+    const supportMimics = PROVIDER_TYPES[type].supportMimics;
+    provider.apiKey =
+      typeof provider.apiKey === 'string' ? provider.apiKey : undefined;
     provider.mimic = this.isSupportedMimic(provider.mimic, supportMimics)
       ? provider.mimic
       : undefined;
@@ -134,7 +137,10 @@ export class ConfigStore {
     return provider;
   }
 
-  private isSupportedMimic(raw: unknown, supported: readonly Mimic[]): raw is Mimic {
+  private isSupportedMimic(
+    raw: unknown,
+    supported: readonly Mimic[],
+  ): raw is Mimic {
     return typeof raw === 'string' && supported.some((m) => m === raw);
   }
 

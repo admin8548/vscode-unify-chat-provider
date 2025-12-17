@@ -10,6 +10,7 @@ import {
   confirmDelete,
   confirmRemove,
   pickQuickItem,
+  showInput,
   showDeletedMessage,
   showRemovedMessage,
   showValidationErrors,
@@ -20,6 +21,7 @@ import {
   confirmDiscardProviderChanges,
   createProviderDraft,
   normalizeProviderDraft,
+  validateProviderNameUnique,
   validateProviderForm,
   type ProviderFormDraft,
 } from './form-utils';
@@ -33,11 +35,12 @@ import {
   promptForBase64Config,
   showCopiedBase64Config,
 } from './base64-config';
+import { WELL_KNOWN_PROVIDERS } from '../well-known-providers';
 
 export type ProviderFormResult = 'saved' | 'deleted' | 'cancelled';
 
 type ProviderListItem = vscode.QuickPickItem & {
-  action?: 'add' | 'add-from-base64' | 'provider';
+  action?: 'add' | 'add-from-wellknown' | 'add-from-base64' | 'provider';
   providerName?: string;
 };
 
@@ -93,6 +96,10 @@ export async function manageProviders(store: ConfigStore): Promise<void> {
     if (!selection) return;
     if (selection.action === 'add') {
       await openProviderForm(store);
+      continue;
+    }
+    if (selection.action === 'add-from-wellknown') {
+      await addProviderFromWellKnownList(store);
       continue;
     }
     if (selection.action === 'add-from-base64') {
@@ -163,6 +170,11 @@ function buildProviderListItems(store: ConfigStore): ProviderListItem[] {
       alwaysShow: true,
     },
     {
+      label: '$(broadcast) Add From Well-Known Provider List...',
+      action: 'add-from-wellknown',
+      alwaysShow: true,
+    },
+    {
       label: '$(file-code) Add From Base64 Config...',
       action: 'add-from-base64',
       alwaysShow: true,
@@ -196,6 +208,78 @@ function buildProviderListItems(store: ConfigStore): ProviderListItem[] {
   }
 
   return items;
+}
+
+type WellKnownProviderItem = vscode.QuickPickItem & {
+  action?: 'back';
+  provider?: ProviderConfig;
+};
+
+async function addProviderFromWellKnownList(store: ConfigStore): Promise<void> {
+  for (;;) {
+    const picked = await pickQuickItem<WellKnownProviderItem>({
+      title: 'Add From Well-Known Provider List',
+      placeholder: 'Select a provider',
+      matchOnDescription: true,
+      matchOnDetail: true,
+      ignoreFocusOut: true,
+      items: [
+        { label: '$(arrow-left) Back', action: 'back' },
+        { label: '', kind: vscode.QuickPickItemKind.Separator },
+        ...WELL_KNOWN_PROVIDERS.map((provider) => ({
+          label: provider.name,
+          description: provider.type,
+          detail: provider.baseUrl,
+          provider,
+        })),
+      ],
+    });
+
+    if (!picked || picked.action === 'back' || !picked.provider) return;
+
+    const draft = createProviderDraft(picked.provider);
+
+    // Step 1: Name
+    for (;;) {
+      const name = await showInput({
+        title: 'Provider Name',
+        prompt: 'Enter a name for this provider',
+        value: draft.name,
+        placeHolder: 'e.g., My Provider, OpenRouter, Custom',
+        ignoreFocusOut: true,
+        showBackButton: true,
+        validateInput: (value) => validateProviderNameUnique(value, store),
+      });
+
+      if (name === undefined) break;
+      draft.name = name.trim();
+
+      // Step 2: API Key
+      for (;;) {
+        const apiKey = await showInput({
+          title: 'API Key',
+          prompt: 'Enter your API key (leave blank to remove)',
+          value: draft.apiKey,
+          password: true,
+          ignoreFocusOut: true,
+          showBackButton: true,
+        });
+
+        if (apiKey === undefined) break;
+        draft.apiKey = apiKey.trim() || undefined;
+
+        // Step 3: Models (with Save at the end)
+        const modelResult = await manageModelList(draft.models, {
+          providerLabel: draft.name ?? picked.provider.name,
+          requireAtLeastOne: false,
+          draft,
+          onSave: async () => saveProviderDraft(draft, store),
+        });
+
+        if (modelResult === 'saved') return;
+      }
+    }
+  }
 }
 
 /**

@@ -11,7 +11,7 @@ interface WellKnownModelConfig extends ModelConfig {
 /**
  * Well-known models configuration
  */
-export const WELL_KNOWN_MODELS: WellKnownModelConfig[] = [
+const _WELL_KNOWN_MODELS = [
   {
     id: 'claude-sonnet-4-5',
     alternativeIds: ['claude-sonnet-4.5'],
@@ -441,7 +441,9 @@ export const WELL_KNOWN_MODELS: WellKnownModelConfig[] = [
     },
     temperature: 0.6,
   },
-];
+] as const satisfies WellKnownModelConfig[];
+export const WELL_KNOWN_MODELS: WellKnownModelConfig[] = _WELL_KNOWN_MODELS;
+export type WellKnownModelId = (typeof _WELL_KNOWN_MODELS)[number]['id'];
 
 /**
  * Check if two IDs match using includes-based comparison

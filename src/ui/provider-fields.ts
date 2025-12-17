@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ConfigStore } from '../config-store';
-import { Mimic, MIMIC_LABELS, PROVIDERS, ProviderType } from '../client';
+import { Mimic, MIMIC_LABELS, PROVIDER_TYPES, ProviderType } from '../client';
 import type { FormSchema, FieldContext } from './field-schema';
 import {
   validateBaseUrl,
@@ -67,7 +67,7 @@ export const providerFormSchema: FormSchema<ProviderFormDraft> = {
         >({
           title: 'API Format',
           placeholder: 'Select the API format',
-          items: Object.values(PROVIDERS).map((opt) => ({
+          items: Object.values(PROVIDER_TYPES).map((opt) => ({
             label: opt.label,
             description: opt.description,
             picked: opt.type === draft.type,
@@ -79,15 +79,17 @@ export const providerFormSchema: FormSchema<ProviderFormDraft> = {
           // Reset mimic if it is not supported by the newly selected provider type
           if (
             draft.mimic &&
-            !PROVIDERS[picked.typeValue].supportMimics.includes(draft.mimic)
+            !PROVIDER_TYPES[picked.typeValue].supportMimics.includes(
+              draft.mimic,
+            )
           ) {
             draft.mimic = undefined;
           }
         }
       },
       getDescription: (draft) =>
-        Object.values(PROVIDERS).find((o) => o.type === draft.type)?.label ||
-        '(required)',
+        Object.values(PROVIDER_TYPES).find((o) => o.type === draft.type)
+          ?.label || '(required)',
     },
     // Base URL field
     {
@@ -150,7 +152,7 @@ export const providerFormSchema: FormSchema<ProviderFormDraft> = {
           return;
         }
 
-        const supported = PROVIDERS[draft.type].supportMimics;
+        const supported = PROVIDER_TYPES[draft.type].supportMimics;
         if (supported.length === 0) {
           vscode.window.showInformationMessage(
             'The selected provider type does not have any mimic options.',

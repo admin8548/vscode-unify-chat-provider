@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { PROVIDERS } from '../client';
+import { PROVIDER_TYPES } from '../client';
 import type { ModelConfig, ProviderConfig } from '../client/interface';
 import { ConfigStore } from '../config-store';
 import {
@@ -297,7 +297,7 @@ export function validateProviderForm(
     if (!data.type) {
       errors.push('Select an API Format before choosing a mimic option');
     } else {
-      const supported = PROVIDERS[data.type].supportMimics;
+      const supported = PROVIDER_TYPES[data.type].supportMimics;
       if (!supported.includes(data.mimic)) {
         errors.push(
           'The selected mimic is not supported by this provider type',

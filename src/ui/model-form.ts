@@ -40,6 +40,7 @@ type ModelListItem = vscode.QuickPickItem & {
     | 'add'
     | 'back'
     | 'edit'
+    | 'save'
     | 'add-from-official'
     | 'add-from-wellknown'
     | 'add-from-base64';
@@ -55,6 +56,7 @@ interface ManageModelListOptions {
   providerLabel: string;
   requireAtLeastOne?: boolean;
   draft?: ProviderFormDraft;
+  onSave?: () => Promise<'saved' | 'invalid'>;
 }
 
 interface ShowModelSelectionPickerOptions {
@@ -69,15 +71,22 @@ interface ShowModelSelectionPickerOptions {
 export async function manageModelList(
   models: ModelConfig[],
   options: ManageModelListOptions,
-): Promise<void> {
+): Promise<'back' | 'saved'> {
   const mustKeepOne = options.requireAtLeastOne ?? false;
+  const includeSave = typeof options.onSave === 'function';
 
   for (;;) {
     const selection = await pickQuickItem<ModelListItem>({
       title: `Models (${options.providerLabel})`,
       placeholder: 'Select a model to edit, or add a new one',
       ignoreFocusOut: true,
-      items: buildModelListItems(models),
+      items: buildModelListItems(models, includeSave),
+      onWillAccept: async (item) => {
+        if (item.action !== 'save') return;
+        if (!options.onSave) return false;
+        const result = await options.onSave();
+        return result === 'saved';
+      },
       onDidTriggerItemButton: async (event, qp) => {
         const model = event.item.model;
         if (!model) return;
@@ -99,7 +108,7 @@ export async function manageModelList(
           vscode.window.showInformationMessage(
             `Model duplicated as "${duplicated.id}".`,
           );
-          qp.items = buildModelListItems(models);
+          qp.items = buildModelListItems(models, includeSave);
           return;
         }
 
@@ -114,13 +123,13 @@ export async function manageModelList(
           const confirmed = await confirmDelete(model.id, 'model');
           if (!confirmed) return;
           removeModel(models, model.id);
-          qp.items = buildModelListItems(models);
+          qp.items = buildModelListItems(models, includeSave);
         }
       },
     });
 
     if (!selection || selection.action === 'back') {
-      return;
+      return 'back';
     }
 
     if (selection.action === 'add') {
@@ -129,6 +138,10 @@ export async function manageModelList(
         models.push(result.model);
       }
       continue;
+    }
+
+    if (selection.action === 'save') {
+      return 'saved';
     }
 
     if (selection.action === 'add-from-base64') {
@@ -344,7 +357,10 @@ async function validateAndBuildModel(
 /**
  * Build the model list items for the picker.
  */
-function buildModelListItems(models: ModelConfig[]): ModelListItem[] {
+function buildModelListItems(
+  models: ModelConfig[],
+  includeSave: boolean,
+): ModelListItem[] {
   const items: ModelListItem[] = [
     { label: '$(arrow-left) Back', action: 'back' },
     { label: '$(add) Add Model...', action: 'add' },
@@ -384,6 +400,11 @@ function buildModelListItems(models: ModelConfig[]): ModelListItem[] {
         ],
       });
     }
+  }
+
+  if (includeSave) {
+    items.push({ label: '', kind: vscode.QuickPickItemKind.Separator });
+    items.push({ label: '$(check) Save', action: 'save' });
   }
 
   return items;
