@@ -45,10 +45,12 @@ export async function runModelFormScreen(
     originalId,
   };
 
+  const providerSuffix = route.providerLabel ? ` (${route.providerLabel})` : '';
+
   const selection = await pickQuickItem<FormItem<ModelConfig>>({
     title: route.model
-      ? `Model: ${route.model.name || route.model.id}`
-      : 'Add Model',
+      ? `Model: ${route.model.name || route.model.id}${providerSuffix}`
+      : `Add Model${providerSuffix}`,
     placeholder: 'Select a field to edit',
     ignoreFocusOut: true,
     items: buildFormItems(modelFormSchema, draft, {

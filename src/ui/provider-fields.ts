@@ -117,7 +117,7 @@ export const providerFormSchema: FormSchema<ProviderFormDraft> = {
       label: 'API Key',
       icon: 'key',
       section: 'primary',
-      prompt: 'Enter your API key (leave blank to remove)',
+      prompt: 'Enter your API key',
       password: true,
       transform: (value) => value.trim() || undefined,
       getDescription: (draft) => (draft.apiKey ? '••••••••' : '(optional)'),
@@ -136,11 +136,11 @@ export const providerFormSchema: FormSchema<ProviderFormDraft> = {
       getDescription: (draft) =>
         draft.models.length > 0
           ? `${draft.models.length} model(s)`
-          : '(optional, none added)',
+          : '(optional)',
       getDetail: (draft) =>
         draft.models.length > 0
           ? draft.models.map((m) => m.name || m.id).join(', ')
-          : undefined,
+          : '(No models configured)',
     },
     // Mimic field
     {

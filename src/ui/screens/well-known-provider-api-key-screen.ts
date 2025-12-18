@@ -14,7 +14,7 @@ export async function runWellKnownProviderApiKeyScreen(
 ): Promise<UiNavAction> {
   const apiKey = await showInput({
     title: 'API Key',
-    prompt: 'Enter your API key (leave blank to remove)',
+    prompt: 'Enter your API key',
     value: route.draft.apiKey,
     password: true,
     ignoreFocusOut: true,

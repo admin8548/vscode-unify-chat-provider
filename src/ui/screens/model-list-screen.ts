@@ -3,13 +3,17 @@ import {
   mergeWithWellKnownModels,
   WELL_KNOWN_MODELS,
 } from '../../well-known/models';
-import { confirmDelete, pickQuickItem } from '../component';
+import { confirmDelete, pickQuickItem, showDeletedMessage } from '../component';
 import {
   duplicateModel,
   promptForBase64Config,
   showCopiedBase64Config,
 } from '../base64-config';
-import { formatModelDetail, removeModel } from '../form-utils';
+import {
+  confirmDiscardProviderChanges,
+  formatModelDetail,
+  removeModel,
+} from '../form-utils';
 import type {
   ModelListRoute,
   UiContext,
@@ -18,6 +22,10 @@ import type {
 } from '../router/types';
 import { createProvider } from '../../client/utils';
 import { ModelConfig } from '../../types';
+import {
+  buildProviderConfigFromDraft,
+  duplicateProvider,
+} from '../provider-ops';
 
 type ModelListItem = vscode.QuickPickItem & {
   action?:
@@ -25,6 +33,10 @@ type ModelListItem = vscode.QuickPickItem & {
     | 'back'
     | 'edit'
     | 'save'
+    | 'provider-settings'
+    | 'provider-copy'
+    | 'provider-duplicate'
+    | 'provider-delete'
     | 'add-from-official'
     | 'add-from-wellknown'
     | 'add-from-base64';
@@ -40,13 +52,17 @@ export async function runModelListScreen(
 
   const mustKeepOne = route.requireAtLeastOne ?? false;
   const includeSave = typeof route.onSave === 'function';
+  const providerName = route.draft?.name ?? route.providerLabel;
+  const title = includeSave
+    ? `Provider: ${providerName}`
+    : `Models (${providerName})`;
   let didSave = false;
 
   const selection = await pickQuickItem<ModelListItem>({
-    title: `Models (${route.providerLabel})`,
+    title,
     placeholder: 'Select a model to edit, or add a new one',
     ignoreFocusOut: true,
-    items: buildModelListItems(route.models, includeSave),
+    items: buildModelListItems(route, includeSave),
     onWillAccept: async (item) => {
       if (item.action !== 'save') return;
       if (!route.onSave) return false;
@@ -73,7 +89,7 @@ export async function runModelListScreen(
         vscode.window.showInformationMessage(
           `Model duplicated as "${duplicated.id}".`,
         );
-        qp.items = buildModelListItems(route.models, includeSave);
+        qp.items = buildModelListItems(route, includeSave);
         return;
       }
 
@@ -87,19 +103,83 @@ export async function runModelListScreen(
         const confirmed = await confirmDelete(model.id, 'model');
         if (!confirmed) return;
         removeModel(route.models, model.id);
-        qp.items = buildModelListItems(route.models, includeSave);
+        qp.items = buildModelListItems(route, includeSave);
       }
     },
   });
 
   if (!selection || selection.action === 'back') {
+    if (route.confirmDiscardOnBack && route.draft) {
+      const decision = await confirmDiscardProviderChanges(
+        route.draft,
+        route.existing,
+      );
+      if (decision === 'discard') return { kind: 'pop' };
+      if (decision === 'save') {
+        if (!route.onSave) {
+          vscode.window.showErrorMessage(
+            'Save is not available in this context.',
+          );
+          return { kind: 'stay' };
+        }
+        const result = await route.onSave();
+        if (result === 'saved') {
+          const afterSave = route.afterSave ?? 'pop';
+          return afterSave === 'popToRoot'
+            ? { kind: 'popToRoot' }
+            : { kind: 'pop' };
+        }
+      }
+      return { kind: 'stay' };
+    }
+
+    return { kind: 'pop' };
+  }
+
+  if (selection.action === 'provider-settings') {
+    if (!route.draft) return { kind: 'stay' };
+    return {
+      kind: 'push',
+      route: {
+        kind: 'providerForm',
+        mode: 'settings',
+        draft: route.draft,
+        existing: route.existing,
+        originalName: route.originalName,
+      },
+    };
+  }
+
+  if (selection.action === 'provider-copy') {
+    if (!route.draft) return { kind: 'stay' };
+    const configToCopy = buildProviderConfigFromDraft(route.draft);
+    await showCopiedBase64Config(configToCopy);
+    return { kind: 'stay' };
+  }
+
+  if (selection.action === 'provider-duplicate') {
+    if (!route.existing) return { kind: 'stay' };
+    await duplicateProvider(ctx.store, route.existing);
+    return { kind: 'stay' };
+  }
+
+  if (selection.action === 'provider-delete') {
+    if (!route.existing || !route.originalName) return { kind: 'stay' };
+    const confirmed = await confirmDelete(route.originalName, 'provider');
+    if (!confirmed) return { kind: 'stay' };
+    await ctx.store.removeProvider(route.originalName);
+    showDeletedMessage(route.originalName, 'Provider');
     return { kind: 'pop' };
   }
 
   if (selection.action === 'add') {
     return {
       kind: 'push',
-      route: { kind: 'modelForm', models: route.models },
+      route: {
+        kind: 'modelForm',
+        models: route.models,
+        providerLabel: route.draft?.name ?? route.providerLabel,
+      },
     };
   }
 
@@ -117,7 +197,12 @@ export async function runModelListScreen(
     if (!config) return { kind: 'stay' };
     return {
       kind: 'push',
-      route: { kind: 'modelForm', models: route.models, initialConfig: config },
+      route: {
+        kind: 'modelForm',
+        models: route.models,
+        initialConfig: config,
+        providerLabel: route.draft?.name ?? route.providerLabel,
+      },
     };
   }
 
@@ -183,6 +268,7 @@ export async function runModelListScreen(
         model: selectedModel,
         models: route.models,
         originalId: selectedModel.id,
+        providerLabel: route.draft?.name ?? route.providerLabel,
       },
     };
   }
@@ -224,11 +310,15 @@ function applyResume(
 }
 
 function buildModelListItems(
-  models: ModelConfig[],
+  route: ModelListRoute,
   includeSave: boolean,
 ): ModelListItem[] {
+  const models = route.models;
   const items: ModelListItem[] = [
     { label: '$(arrow-left) Back', action: 'back' },
+  ];
+
+  items.push(
     { label: '$(add) Add Model...', action: 'add' },
     {
       label: '$(broadcast) Add From Well-Known Model List...',
@@ -242,7 +332,7 @@ function buildModelListItems(
       label: '$(file-code) Add From Base64 Config...',
       action: 'add-from-base64',
     },
-  ];
+  );
 
   if (models.length > 0) {
     items.push({ label: '', kind: vscode.QuickPickItemKind.Separator });
@@ -268,9 +358,26 @@ function buildModelListItems(
     }
   }
 
-  if (includeSave) {
+  if (route.draft && typeof route.onSave === 'function') {
     items.push({ label: '', kind: vscode.QuickPickItemKind.Separator });
-    items.push({ label: '$(check) Save', action: 'save' });
+    items.push({
+      label: '$(gear) Provider Settings...',
+      action: 'provider-settings',
+    });
+  }
+
+  if (includeSave || route.existing) {
+    items.push({ label: '', kind: vscode.QuickPickItemKind.Separator });
+
+    if (includeSave) {
+      items.push({ label: '$(check) Save', action: 'save' });
+    }
+
+    if (route.existing && route.draft) {
+      items.push({ label: '$(copy) Copy', action: 'provider-copy' });
+      items.push({ label: '$(files) Duplicate', action: 'provider-duplicate' });
+      items.push({ label: '$(trash) Delete', action: 'provider-delete' });
+    }
   }
 
   return items;

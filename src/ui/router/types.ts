@@ -12,6 +12,7 @@ export interface ProviderListRoute {
 
 export interface ProviderFormRoute {
   kind: 'providerForm';
+  mode?: 'full' | 'settings';
   providerName?: string;
   initialConfig?: Partial<ProviderConfig>;
   existing?: ProviderConfig;
@@ -41,12 +42,16 @@ export interface ModelListRoute {
   providerLabel: string;
   requireAtLeastOne?: boolean;
   draft?: ProviderFormDraft;
+  existing?: ProviderConfig;
+  originalName?: string;
+  confirmDiscardOnBack?: boolean;
   onSave?: () => Promise<'saved' | 'invalid'>;
   afterSave?: 'pop' | 'popToRoot';
 }
 
 export interface ModelFormRoute {
   kind: 'modelForm';
+  providerLabel?: string;
   model?: ModelConfig;
   models: ModelConfig[];
   initialConfig?: Partial<ModelConfig>;

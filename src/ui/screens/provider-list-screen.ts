@@ -10,7 +10,8 @@ import type {
   UiNavAction,
   UiResume,
 } from '../router/types';
-import { duplicateProvider } from '../provider-ops';
+import { duplicateProvider, saveProviderDraft } from '../provider-ops';
+import { createProviderDraft } from '../form-utils';
 import { ProviderConfig } from '../../types';
 
 type ProviderListItem = vscode.QuickPickItem & {
@@ -87,9 +88,35 @@ export async function runProviderListScreen(
   }
 
   if (selection.providerName) {
+    const existing = ctx.store.getProvider(selection.providerName);
+    if (!existing) {
+      vscode.window.showErrorMessage(
+        `Provider "${selection.providerName}" not found.`,
+      );
+      return { kind: 'stay' };
+    }
+
+    const draft = createProviderDraft(existing);
     return {
       kind: 'push',
-      route: { kind: 'providerForm', providerName: selection.providerName },
+      route: {
+        kind: 'modelList',
+        models: draft.models,
+        providerLabel: existing.name,
+        requireAtLeastOne: false,
+        draft,
+        existing,
+        originalName: existing.name,
+        confirmDiscardOnBack: true,
+        onSave: async () =>
+          saveProviderDraft({
+            draft,
+            store: ctx.store,
+            existing,
+            originalName: existing.name,
+          }),
+        afterSave: 'pop',
+      },
     };
   }
 

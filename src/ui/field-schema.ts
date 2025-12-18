@@ -154,6 +154,7 @@ export function buildFormItems<T>(
   draft: T,
   options: {
     isEditing: boolean;
+    includeActionButtons?: boolean;
     backLabel?: string;
     saveLabel?: string;
     deleteLabel?: string;
@@ -163,6 +164,7 @@ export function buildFormItems<T>(
 ): FormItem<T>[] {
   const {
     isEditing,
+    includeActionButtons = true,
     backLabel = '$(arrow-left) Back',
     saveLabel = '$(check) Save',
     deleteLabel = '$(trash) Delete',
@@ -233,14 +235,16 @@ export function buildFormItems<T>(
     }
   }
 
-  // Action buttons
-  items.push({ label: '', kind: vscode.QuickPickItemKind.Separator });
-  items.push({ label: saveLabel, action: 'confirm' });
+  if (includeActionButtons) {
+    // Action buttons
+    items.push({ label: '', kind: vscode.QuickPickItemKind.Separator });
+    items.push({ label: saveLabel, action: 'confirm' });
 
-  if (isEditing) {
-    items.push({ label: copyLabel, action: 'copy' });
-    items.push({ label: duplicateLabel, action: 'duplicate' });
-    items.push({ label: deleteLabel, action: 'delete' });
+    if (isEditing) {
+      items.push({ label: copyLabel, action: 'copy' });
+      items.push({ label: duplicateLabel, action: 'duplicate' });
+      items.push({ label: deleteLabel, action: 'delete' });
+    }
   }
 
   return items;

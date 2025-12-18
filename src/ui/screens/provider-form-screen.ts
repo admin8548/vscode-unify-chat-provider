@@ -29,6 +29,11 @@ import {
   saveProviderDraft,
 } from '../provider-ops';
 
+const providerSettingsSchema = {
+  ...providerFormSchema,
+  fields: providerFormSchema.fields.filter((f) => f.key !== 'models'),
+};
+
 export async function runProviderFormScreen(
   ctx: UiContext,
   route: ProviderFormRoute,
@@ -41,6 +46,7 @@ export async function runProviderFormScreen(
   const draft = route.draft;
   const existing = route.existing;
   const originalName = route.originalName;
+  const isSettings = route.mode === 'settings';
 
   const context: ProviderFieldContext = {
     store: ctx.store,
@@ -49,15 +55,28 @@ export async function runProviderFormScreen(
   };
 
   const selection = await pickQuickItem<FormItem<ProviderFormDraft>>({
-    title: existing ? 'Edit Provider' : 'Add Provider',
+    title: isSettings
+      ? existing
+        ? `Provider Settings (${existing.name})`
+        : 'Provider Settings'
+      : existing
+        ? 'Edit Provider'
+        : 'Add Provider',
     placeholder: 'Select a field to edit',
     ignoreFocusOut: true,
-    items: buildFormItems(providerFormSchema, draft, {
+    items: buildFormItems(
+      isSettings ? providerSettingsSchema : providerFormSchema,
+      draft,
+      {
       isEditing: !!existing,
-    }),
+      includeActionButtons: !isSettings,
+      },
+    ),
   });
 
   if (!selection || selection.action === 'cancel') {
+    if (isSettings) return { kind: 'pop' };
+
     const decision = await confirmDiscardProviderChanges(draft, existing);
     if (decision === 'discard') return { kind: 'pop' };
     if (decision === 'save') {
@@ -72,7 +91,7 @@ export async function runProviderFormScreen(
     return { kind: 'stay' };
   }
 
-  if (selection.action === 'delete' && existing) {
+  if (!isSettings && selection.action === 'delete' && existing) {
     const confirmed = await confirmDelete(existing.name, 'provider');
     if (confirmed) {
       await ctx.store.removeProvider(existing.name);
@@ -82,18 +101,18 @@ export async function runProviderFormScreen(
     return { kind: 'stay' };
   }
 
-  if (selection.action === 'copy') {
+  if (!isSettings && selection.action === 'copy') {
     const configToCopy = buildProviderConfigFromDraft(draft);
     await showCopiedBase64Config(configToCopy);
     return { kind: 'stay' };
   }
 
-  if (selection.action === 'duplicate' && existing) {
+  if (!isSettings && selection.action === 'duplicate' && existing) {
     await duplicateProvider(ctx.store, existing);
     return { kind: 'stay' };
   }
 
-  if (selection.action === 'confirm') {
+  if (!isSettings && selection.action === 'confirm') {
     const saved = await saveProviderDraft({
       draft,
       store: ctx.store,
@@ -106,7 +125,7 @@ export async function runProviderFormScreen(
 
   const field = selection.field;
   if (field) {
-    if (field === 'models') {
+    if (!isSettings && field === 'models') {
       return {
         kind: 'push',
         route: {
@@ -119,7 +138,12 @@ export async function runProviderFormScreen(
       };
     }
 
-    await editField(providerFormSchema, draft, field, context);
+    await editField(
+      isSettings ? providerSettingsSchema : providerFormSchema,
+      draft,
+      field,
+      context,
+    );
   }
 
   return { kind: 'stay' };

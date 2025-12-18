@@ -98,7 +98,7 @@ export const modelFormSchema: FormSchema<ModelConfig> = {
       label: 'Display Name',
       icon: 'symbol-text',
       section: 'primary',
-      prompt: 'Enter display name (leave blank to remove)',
+      prompt: 'Enter display name (leave blank to use model ID)',
       placeholder: 'e.g., Claude Sonnet 4',
       transform: (value) => value.trim() || undefined,
       getDescription: (draft) => draft.name || '(optional)',
