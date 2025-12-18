@@ -645,27 +645,53 @@ export class OpenAIResponsesProvider implements ApiProvider {
           }
           break;
 
+        case 'response.output_item.done': {
+          const item = event.item;
+          if (item.type === 'function_call') {
+            yield new vscode.LanguageModelToolCallPart(
+              item.call_id,
+              item.name,
+              this.parseArguments(item.arguments),
+            );
+          }
+          break;
+        }
+
         case 'response.completed': {
           const response = event.response;
           usage = response.usage ?? undefined;
 
           yield* this.extractThinkingParts(
             response.output.filter((v) => v.type === 'reasoning'),
+            'metadata-only',
           );
-
-          for (const item of response.output) {
-            if (item.type === 'function_call') {
-              yield new vscode.LanguageModelToolCallPart(
-                item.call_id,
-                item.name,
-                this.parseArguments(item.arguments),
-              );
-            }
-          }
 
           yield encodeStatefulMarkerPart<ResponseInputItem[]>(response.output);
           break;
         }
+
+        case 'response.failed':
+          throw new Error(
+            `OpenAI Response Failed: ${
+              event.response.error
+                ? `${event.response.error.message}(${event.response.error.code})`
+                : 'unknown error'
+            }`,
+          );
+
+        case 'response.incomplete':
+          throw new Error(
+            `OpenAI Response Incomplete: ${
+              event.response.incomplete_details?.reason || 'unknown reason'
+            }`,
+          );
+
+        case 'error':
+          throw new Error(
+            `OpenAI API Error: ${event.message}${
+              event.code ? ` (${event.code})` : ''
+            }`,
+          );
 
         default:
           break;
