@@ -1,7 +1,13 @@
 import * as vscode from 'vscode';
 import { ConfigStore } from './config-store';
 import { UnifyChatService } from './service';
-import { addProvider, removeProvider, manageProviders } from './ui';
+import {
+  addProvider,
+  addProviderFromBase64Config,
+  addProviderFromWellKnownList,
+  manageProviders,
+  removeProvider,
+} from './ui';
 
 const VENDOR_ID = 'unify-chat-provider';
 
@@ -41,6 +47,14 @@ export function registerCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand('unifyChatProvider.addProvider', () =>
       addProvider(configStore),
+    ),
+    vscode.commands.registerCommand(
+      'unifyChatProvider.addProviderFromBase64Config',
+      () => addProviderFromBase64Config(configStore),
+    ),
+    vscode.commands.registerCommand(
+      'unifyChatProvider.addProviderFromWellKnownList',
+      () => addProviderFromWellKnownList(configStore),
     ),
     vscode.commands.registerCommand('unifyChatProvider.removeProvider', () =>
       removeProvider(configStore),

@@ -87,6 +87,14 @@
         "title": "Unify Chat Provider: Add Provider"
       },
       {
+        "command": "unifyChatProvider.addProviderFromBase64Config",
+        "title": "Unify Chat Provider: Add Provider From Base64 Config"
+      },
+      {
+        "command": "unifyChatProvider.addProviderFromWellKnownList",
+        "title": "Unify Chat Provider: Add Provider From Well-Known Provider List"
+      },
+      {
         "command": "unifyChatProvider.removeProvider",
         "title": "Unify Chat Provider: Remove Provider"
       },
@@ -121,12 +129,14 @@
                 "enum": [
                   "anthropic",
                   "openai-chat-completion",
-                  "openai-responses"
+                  "openai-responses",
+                  "ollama"
                 ],
                 "enumDescriptions": [
                   "Anthropic Messages API",
                   "OpenAI Chat Completion API",
-                  "OpenAI Responses API"
+                  "OpenAI Responses API",
+                  "Ollama Chat API"
                 ]
               },
               "name": {
@@ -416,6 +426,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
+    "ollama": "^0.6.3",
     "openai": "^6.10.0"
   }
 }

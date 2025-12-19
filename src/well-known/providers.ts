@@ -18,6 +18,12 @@ export const WELL_KNOWN_PROVIDERS: ProviderConfig[] = [
       'claude-haiku-4-5',
     ),
   },
+  {
+    name: 'Ollama Local',
+    type: 'ollama',
+    baseUrl: 'http://localhost:11434',
+    models: [],
+  },
 ];
 
 function wellKnowns(...ids: WellKnownModelId[]): ModelConfig[] {

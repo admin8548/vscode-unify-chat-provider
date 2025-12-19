@@ -1,6 +1,7 @@
 import { getBaseModelId } from '../model-id-utils';
 import { AnthropicProvider } from './anthropic/client';
 import { ProviderDefinition } from './interface';
+import { OllamaProvider } from './ollama/client';
 import { OpenAIChatCompletionProvider } from './openai/chat-completion-client';
 import { OpenAIResponsesProvider } from './openai/responses-client';
 import { Feature } from './types';
@@ -9,7 +10,8 @@ import { matchProvider, matchModelFamily } from './utils';
 export type ProviderType =
   | 'anthropic'
   | 'openai-chat-completion'
-  | 'openai-responses';
+  | 'openai-responses'
+  | 'ollama';
 
 export const PROVIDER_TYPES: Record<ProviderType, ProviderDefinition> = {
   anthropic: {
@@ -32,6 +34,13 @@ export const PROVIDER_TYPES: Record<ProviderType, ProviderDefinition> = {
     description: '/v1/responses',
     supportMimics: [],
     class: OpenAIResponsesProvider,
+  },
+  ollama: {
+    type: 'ollama',
+    label: 'Ollama Chat API',
+    description: '/api/chat',
+    supportMimics: [],
+    class: OllamaProvider,
   },
 };
 
