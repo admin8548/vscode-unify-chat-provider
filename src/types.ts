@@ -32,9 +32,19 @@ export interface ModelConfig {
   name?: string;
   /** Model family (e.g., gpt-4, claude-3) */
   family?: string;
-  /** Maximum input tokens */
+  /**
+   * Maximum input/context tokens (context window).
+   *
+   * Note: Some providers expose this as a "max context" setting (input + output)
+   * rather than a strict "prompt-only" limit.
+   */
   maxInputTokens?: number;
-  /** Maximum output tokens */
+  /**
+   * Maximum output tokens (generated tokens / completion).
+   *
+   * Some providers require this value (e.g., Anthropic `max_tokens`), while
+   * others treat it as optional and apply a server-side default if omitted.
+   */
   maxOutputTokens?: number;
   /** Model capabilities */
   capabilities?: ModelCapabilities;

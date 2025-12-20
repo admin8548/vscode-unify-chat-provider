@@ -430,6 +430,9 @@ export class OllamaProvider implements ApiProvider {
     if (model.maxOutputTokens !== undefined) {
       options.num_predict = model.maxOutputTokens;
     }
+    if (model.maxInputTokens !== undefined) {
+      options.num_ctx = model.maxInputTokens;
+    }
     if (model.temperature !== undefined) {
       options.temperature = model.temperature;
     }

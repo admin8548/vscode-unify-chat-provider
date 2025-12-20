@@ -1,4 +1,5 @@
 import type { ConfigStore } from '../../config-store';
+import type { ProviderType } from '../../client/definitions';
 import { ProviderConfig, ModelConfig } from '../../types';
 import type { ProviderFormDraft } from '../form-utils';
 
@@ -53,6 +54,7 @@ export interface ModelListRoute {
 export interface ModelFormRoute {
   kind: 'modelForm';
   providerLabel?: string;
+  providerType?: ProviderType;
   model?: ModelConfig;
   models: ModelConfig[];
   initialConfig?: Partial<ModelConfig>;

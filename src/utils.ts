@@ -1,5 +1,5 @@
 import { DataPartMimeTypes, StatefulMarkerData } from './client/types';
-import type { RequestLogger } from './logger';
+import type { ProviderHttpLogger } from './logger';
 import * as vscode from 'vscode';
 
 /**
@@ -38,7 +38,7 @@ export interface RetryConfig {
 
 export interface FetchWithRetryOptions extends RequestInit {
   retryConfig?: RetryConfig;
-  logger?: RequestLogger;
+  logger?: ProviderHttpLogger;
 }
 
 export function headersInitToRecord(

@@ -3,7 +3,7 @@ import { ConfigStore } from './config-store';
 import { UnifyChatService } from './service';
 import {
   addProvider,
-  addProviderFromBase64Config,
+  addProviderFromConfig,
   addProviderFromWellKnownList,
   manageProviders,
   removeProvider,
@@ -49,8 +49,8 @@ export function registerCommands(
       addProvider(configStore),
     ),
     vscode.commands.registerCommand(
-      'unifyChatProvider.addProviderFromBase64Config',
-      () => addProviderFromBase64Config(configStore),
+      'unifyChatProvider.addProviderFromConfig',
+      () => addProviderFromConfig(configStore),
     ),
     vscode.commands.registerCommand(
       'unifyChatProvider.addProviderFromWellKnownList',

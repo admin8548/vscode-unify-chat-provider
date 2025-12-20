@@ -150,7 +150,7 @@ export interface ProviderHttpLogger {
     body?: unknown;
   }): void;
   providerResponseMeta(response: Response): void;
-  retry?(
+  retry(
     attempt: number,
     maxRetries: number,
     statusCode: number,
@@ -456,6 +456,17 @@ export class SimpleHttpLogger implements ProviderHttpLogger {
       providerType: string;
     },
   ) {}
+
+  retry(
+    attempt: number,
+    maxRetries: number,
+    statusCode: number,
+    delayMs: number,
+  ): void {
+    this.ch.warn(
+      `[${this.requestId}] ⟳ Retry ${attempt}/${maxRetries} after HTTP ${statusCode}, waiting ${delayMs}ms`,
+    );
+  }
 
   providerRequest(details: {
     endpoint: string;

@@ -49,6 +49,9 @@ import { isFeatureSupported } from '../utils';
 export class AnthropicProvider implements ApiProvider {
   private readonly baseUrl: string;
 
+  private static readonly CLAUDE_CODE_SYSTEM_INSTRUCTION =
+    "You are Claude Code, Anthropic's official CLI for Claude.";
+
   constructor(private readonly config: ProviderConfig) {
     this.baseUrl = this.buildBaseUrl(config.baseUrl);
   }
@@ -72,7 +75,21 @@ export class AnthropicProvider implements ApiProvider {
       input: RequestInfo | URL,
       init?: RequestInit,
     ): Promise<Response> => {
-      const url = typeof input === 'string' ? input : input.toString();
+      let url = typeof input === 'string' ? input : input.toString();
+
+      // Claude Code client always calls the messages endpoints with `?beta=true`.
+      if (this.config.mimic === 'claude-code') {
+        try {
+          const u = new URL(url);
+          const isMessagesEndpoint =
+            u.pathname.endsWith('/v1/messages') ||
+            u.pathname.endsWith('/v1/messages/count_tokens');
+          if (isMessagesEndpoint && !u.searchParams.has('beta')) {
+            u.searchParams.set('beta', 'true');
+          }
+          url = u.toString();
+        } catch {}
+      }
 
       if (logger) {
         const requestHeaders = headersInitToRecord(init?.headers);
@@ -114,18 +131,19 @@ export class AnthropicProvider implements ApiProvider {
     Object.assign(headers, this.config.extraHeaders, modelConfig?.extraHeaders);
 
     if (this.config.mimic === 'claude-code') {
-      headers['User-Agent'] = 'claude-cli/2.0.55 (external, cli)';
+      headers['User-Agent'] = 'claude-cli/1.0.83 (external, cli)';
       headers['x-app'] = 'cli';
       // these headers already set by the SDK, but we set them here for fixed values
       headers['x-stainless-arch'] = 'arm64';
       headers['x-stainless-lang'] = 'js';
       headers['x-stainless-os'] = 'MacOS';
-      headers['x-stainless-package-version'] = '0.70.0';
+      headers['x-stainless-package-version'] = '0.55.1';
       headers['x-stainless-retry-count'] = '0';
       headers['x-stainless-runtime'] = 'node';
       headers['x-stainless-runtime-version'] = 'v20.19.6';
       headers['x-stainless-timeout'] = '600';
       headers['anthropic-version'] = '2023-06-01';
+      headers['Anthropic-Dangerous-Direct-Browser-Access'] = 'true';
     }
 
     if (this.config.apiKey) {
@@ -146,8 +164,8 @@ export class AnthropicProvider implements ApiProvider {
     system?: string | BetaTextBlockParam[];
     messages: BetaMessageParam[];
   } {
+    let system: BetaTextBlockParam[] = [];
     const outMessages: BetaMessageParam[] = [];
-    const system: BetaTextBlockParam[] = [];
     const rawMap = new Map<BetaMessageParam, BetaMessage>();
 
     for (const msg of messages) {
@@ -206,6 +224,10 @@ export class AnthropicProvider implements ApiProvider {
       outMessages[index].content = raw.content;
     }
 
+    if (this.config.mimic === 'claude-code') {
+      system = this.applyClaudeCodeSystemInstructions(system);
+    }
+
     // add a cache breakpoint at the end.
     this.applyCacheControl(system, outMessages);
 
@@ -213,6 +235,43 @@ export class AnthropicProvider implements ApiProvider {
       messages: this.ensureAlternatingRoles(outMessages),
       system: system.length > 0 ? system : undefined,
     };
+  }
+
+  private applyClaudeCodeSystemInstructions(
+    system: string | BetaTextBlockParam[] | undefined,
+  ): BetaTextBlockParam[] {
+    const instructionBlock: BetaTextBlockParam = {
+      type: 'text',
+      text: AnthropicProvider.CLAUDE_CODE_SYSTEM_INSTRUCTION,
+    };
+
+    if (!system) {
+      return [instructionBlock];
+    }
+
+    if (typeof system === 'string') {
+      const trimmed = system.trim();
+      if (!trimmed) {
+        return [instructionBlock];
+      }
+      if (trimmed === AnthropicProvider.CLAUDE_CODE_SYSTEM_INSTRUCTION) {
+        return [instructionBlock];
+      }
+      return [instructionBlock, { type: 'text', text: trimmed }];
+    }
+
+    if (system.length === 0) {
+      return [instructionBlock];
+    }
+
+    const first = system[0];
+    if (first?.type === 'text') {
+      if (first.text === AnthropicProvider.CLAUDE_CODE_SYSTEM_INSTRUCTION) {
+        return system;
+      }
+    }
+
+    return [instructionBlock, ...system];
   }
 
   private applyCacheControl(
@@ -674,6 +733,8 @@ export class AnthropicProvider implements ApiProvider {
     if (this.config.mimic === 'claude-code') {
       betaFeatures.add('claude-code-20250219');
       betaFeatures.add('interleaved-thinking-2025-05-14');
+      // betaFeatures.add('oauth-2025-04-20');
+      betaFeatures.add('fine-grained-tool-streaming-2025-05-14');
     }
 
     const headers = this.buildHeaders(model);

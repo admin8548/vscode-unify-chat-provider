@@ -77,8 +77,8 @@ export async function runProviderListScreen(
 
   if (selection.action === 'add-from-base64') {
     const config = await promptForBase64Config<Partial<ProviderConfig>>({
-      title: 'Add Provider From Base64 Config',
-      placeholder: 'Paste Base64 configuration string...',
+      title: 'Add Provider From Config',
+      placeholder: 'Paste configuration JSON or Base64 string...',
     });
     if (!config) return { kind: 'stay' };
     return {
@@ -137,7 +137,7 @@ function buildProviderListItems(store: UiContext['store']): ProviderListItem[] {
       alwaysShow: true,
     },
     {
-      label: '$(file-code) Add From Base64 Config...',
+      label: '$(file-code) Add From Config...',
       action: 'add-from-base64',
       alwaysShow: true,
     },

@@ -87,8 +87,8 @@
         "title": "Unify Chat Provider: Add Provider"
       },
       {
-        "command": "unifyChatProvider.addProviderFromBase64Config",
-        "title": "Unify Chat Provider: Add Provider From Base64 Config"
+        "command": "unifyChatProvider.addProviderFromConfig",
+        "title": "Unify Chat Provider: Add Provider From Config"
       },
       {
         "command": "unifyChatProvider.addProviderFromWellKnownList",
@@ -199,8 +199,8 @@
                         },
                         "maxInputTokens": {
                           "type": "number",
-                          "description": "Maximum input tokens.",
-                          "default": 200000
+                          "description": "Maximum input/context tokens.",
+                          "default": 128000
                         },
                         "maxOutputTokens": {
                           "type": "number",

@@ -182,6 +182,7 @@ export async function runModelListScreen(
         kind: 'modelForm',
         models: route.models,
         providerLabel: route.draft?.name ?? route.providerLabel,
+        providerType: route.draft?.type,
       },
     };
   }
@@ -194,8 +195,8 @@ export async function runModelListScreen(
 
   if (selection.action === 'add-from-base64') {
     const config = await promptForBase64Config<Partial<ModelConfig>>({
-      title: 'Add Model From Base64 Config',
-      placeholder: 'Paste Base64 configuration string...',
+      title: 'Add Model From Config',
+      placeholder: 'Paste configuration JSON or Base64 string...',
     });
     if (!config) return { kind: 'stay' };
     return {
@@ -205,6 +206,7 @@ export async function runModelListScreen(
         models: route.models,
         initialConfig: config,
         providerLabel: route.draft?.name ?? route.providerLabel,
+        providerType: route.draft?.type,
       },
     };
   }
@@ -244,7 +246,7 @@ export async function runModelListScreen(
   }
 
   if (selection.action === 'add-from-wellknown') {
-        return {
+    return {
       kind: 'push',
       route: {
         kind: 'modelSelection',
@@ -265,6 +267,7 @@ export async function runModelListScreen(
         models: route.models,
         originalId: selectedModel.id,
         providerLabel: route.draft?.name ?? route.providerLabel,
+        providerType: route.draft?.type,
       },
     };
   }
@@ -325,7 +328,7 @@ function buildModelListItems(
       action: 'add-from-official',
     },
     {
-      label: '$(file-code) Add From Base64 Config...',
+      label: '$(file-code) Add From Config...',
       action: 'add-from-base64',
     },
   );

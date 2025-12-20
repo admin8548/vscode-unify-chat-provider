@@ -15,12 +15,10 @@ export async function addProvider(store: ConfigStore): Promise<void> {
   await runUiStack(ctx, { kind: 'providerForm' });
 }
 
-export async function addProviderFromBase64Config(
-  store: ConfigStore,
-): Promise<void> {
+export async function addProviderFromConfig(store: ConfigStore): Promise<void> {
   const config = await promptForBase64Config<Partial<ProviderConfig>>({
-    title: 'Add Provider From Base64 Config',
-    placeholder: 'Paste Base64 configuration string...',
+    title: 'Add Provider From Config',
+    placeholder: 'Paste configuration JSON or Base64 string...',
   });
   if (!config) return;
 

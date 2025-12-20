@@ -4,7 +4,7 @@
 export {
   manageProviders,
   addProvider,
-  addProviderFromBase64Config,
+  addProviderFromConfig,
   addProviderFromWellKnownList,
   removeProvider,
 } from './provider-ui';

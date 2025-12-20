@@ -43,6 +43,7 @@ export async function runModelFormScreen(
   const context: ModelFieldContext = {
     models: route.models,
     originalId,
+    providerType: route.providerType,
   };
 
   const providerSuffix = route.providerLabel ? ` (${route.providerLabel})` : '';
@@ -53,9 +54,14 @@ export async function runModelFormScreen(
       : `Add Model${providerSuffix}`,
     placeholder: 'Select a field to edit',
     ignoreFocusOut: true,
-    items: buildFormItems(modelFormSchema, draft, {
-      isEditing: !!route.model,
-    }),
+    items: buildFormItems(
+      modelFormSchema,
+      draft,
+      {
+        isEditing: !!route.model,
+      },
+      context,
+    ),
   });
 
   if (!selection || selection.action === 'cancel') {

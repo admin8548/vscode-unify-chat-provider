@@ -44,7 +44,7 @@ export interface TextFieldDef<T, K extends keyof T> extends BaseFieldDef<T, K> {
   /** Get the current value for display */
   getValue?: (draft: T) => string;
   /** Get the description for the form item */
-  getDescription?: (draft: T) => string;
+  getDescription?: (draft: T, context?: FieldContext) => string | undefined;
 }
 
 /**
@@ -53,14 +53,14 @@ export interface TextFieldDef<T, K extends keyof T> extends BaseFieldDef<T, K> {
 export interface NumericFieldDef<T, K extends keyof T>
   extends BaseFieldDef<T, K> {
   type: 'number';
-  prompt: string;
+  prompt: string | ((draft: T, context: FieldContext) => string);
   placeholder?: string;
   /** Whether to allow only positive integers */
   positiveInteger?: boolean;
   /** Get the current value for display */
   getValue?: (draft: T) => number | undefined;
   /** Get the description for the form item */
-  getDescription?: (draft: T) => string;
+  getDescription?: (draft: T, context?: FieldContext) => string | undefined;
 }
 
 /**
@@ -89,7 +89,7 @@ export interface PickerFieldDef<T, K extends keyof T, V = unknown>
   /** Set the value after selection */
   setValue?: (draft: T, value: V) => void;
   /** Get the description for the form item */
-  getDescription?: (draft: T) => string;
+  getDescription?: (draft: T, context?: FieldContext) => string | undefined;
 }
 
 /**
@@ -101,7 +101,7 @@ export interface CustomFieldDef<T, K extends keyof T>
   /** Custom edit handler */
   edit: (draft: T, context: FieldContext) => Promise<void>;
   /** Get the description for the form item */
-  getDescription?: (draft: T) => string;
+  getDescription?: (draft: T, context?: FieldContext) => string | undefined;
   /** Get the detail text for the form item */
   getDetail?: (draft: T) => string | undefined;
 }
@@ -161,6 +161,7 @@ export function buildFormItems<T>(
     copyLabel?: string;
     duplicateLabel?: string;
   },
+  context?: FieldContext,
 ): FormItem<T>[] {
   const {
     isEditing,
@@ -201,7 +202,7 @@ export function buildFormItems<T>(
     // Fields in this section
     for (const field of sectionFields) {
       const icon = field.icon ? `$(${field.icon}) ` : '';
-      const description = getFieldDescription(field, draft);
+      const description = getFieldDescription(field, draft, context);
       const detail = getFieldDetail(field, draft);
 
       items.push({
@@ -223,7 +224,7 @@ export function buildFormItems<T>(
 
     for (const field of unsectionedFields) {
       const icon = field.icon ? `$(${field.icon}) ` : '';
-      const description = getFieldDescription(field, draft);
+      const description = getFieldDescription(field, draft, context);
       const detail = getFieldDetail(field, draft);
 
       items.push({
@@ -250,7 +251,11 @@ export function buildFormItems<T>(
   return items;
 }
 
-function getFieldDescription<T>(field: FieldDef<T, keyof T>, draft: T): string {
+function getFieldDescription<T>(
+  field: FieldDef<T, keyof T>,
+  draft: T,
+  context?: FieldContext,
+): string | undefined {
   if (
     field.type === 'text' ||
     field.type === 'number' ||
@@ -258,7 +263,7 @@ function getFieldDescription<T>(field: FieldDef<T, keyof T>, draft: T): string {
     field.type === 'custom'
   ) {
     if ('getDescription' in field && field.getDescription) {
-      return field.getDescription(draft);
+      return field.getDescription(draft, context);
     }
   }
 

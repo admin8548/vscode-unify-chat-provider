@@ -1,8 +1,5 @@
 import * as vscode from 'vscode';
-import {
-  DEFAULT_MAX_INPUT_TOKENS,
-  DEFAULT_MAX_OUTPUT_TOKENS,
-} from '../defaults';
+import { DEFAULT_MAX_OUTPUT_TOKENS } from '../defaults';
 import type { FieldContext, FormSchema } from './field-schema';
 import { booleanOptions, formatBoolean } from './field-editors';
 import { pickQuickItem, showInput } from './component';
@@ -15,6 +12,7 @@ import {
   generateAutoVersionedId,
   MODEL_VERSION_DELIMITER,
 } from '../model-id-utils';
+import type { ProviderType } from '../client/definitions';
 import { ModelConfig } from '../types';
 
 /**
@@ -23,6 +21,7 @@ import { ModelConfig } from '../types';
 export interface ModelFieldContext extends FieldContext {
   models: ModelConfig[];
   originalId?: string;
+  providerType?: ProviderType;
 }
 
 /**
@@ -119,14 +118,25 @@ export const modelFormSchema: FormSchema<ModelConfig> = {
     {
       key: 'maxInputTokens',
       type: 'number',
-      label: 'Max Input Tokens',
+      label: 'Max Input/Context Tokens',
       icon: 'arrow-down',
       section: 'details',
-      prompt: `Enter max input tokens (leave blank for defaults: ${DEFAULT_MAX_INPUT_TOKENS.toLocaleString()})`,
+      prompt: (_draft, context) => {
+        const providerType = (context as ModelFieldContext).providerType;
+        if (!providerType) return 'Enter max input/context tokens';
+        return 'Enter max input/context tokens (leave blank to let the provider decide)';
+      },
+      placeholder: 'Leave blank for default',
       positiveInteger: true,
-      getDescription: (draft) =>
-        draft.maxInputTokens?.toLocaleString() ||
-        `optional, defaults: ${DEFAULT_MAX_INPUT_TOKENS.toLocaleString()}`,
+      getDescription: (draft, context) => {
+        if (draft.maxInputTokens !== undefined) {
+          return draft.maxInputTokens.toLocaleString();
+        }
+        const providerType = (context as ModelFieldContext | undefined)
+          ?.providerType;
+        if (!providerType) return undefined;
+        return 'provider decides';
+      },
     },
     // Max Output Tokens
     {
@@ -135,11 +145,28 @@ export const modelFormSchema: FormSchema<ModelConfig> = {
       label: 'Max Output Tokens',
       icon: 'arrow-up',
       section: 'details',
-      prompt: `Enter max output tokens (leave blank for defaults: ${DEFAULT_MAX_OUTPUT_TOKENS.toLocaleString()})`,
+      prompt: (_draft, context) => {
+        const providerType = (context as ModelFieldContext).providerType;
+        if (!providerType) return 'Enter max output tokens';
+        if (providerType === 'anthropic') {
+          return `Enter max output tokens (leave blank to send default: ${DEFAULT_MAX_OUTPUT_TOKENS.toLocaleString()})`;
+        }
+        return 'Enter max output tokens (leave blank to let the provider decide)';
+      },
+      placeholder: 'Leave blank for default',
       positiveInteger: true,
-      getDescription: (draft) =>
-        draft.maxOutputTokens?.toLocaleString() ||
-        `optional, defaults: ${DEFAULT_MAX_OUTPUT_TOKENS.toLocaleString()}`,
+      getDescription: (draft, context) => {
+        if (draft.maxOutputTokens !== undefined) {
+          return draft.maxOutputTokens.toLocaleString();
+        }
+        const providerType = (context as ModelFieldContext | undefined)
+          ?.providerType;
+        if (!providerType) return undefined;
+        if (providerType === 'anthropic') {
+          return `default: ${DEFAULT_MAX_OUTPUT_TOKENS.toLocaleString()}`;
+        }
+        return 'provider decides';
+      },
     },
     // Tool Calling (custom due to special limit option)
     {

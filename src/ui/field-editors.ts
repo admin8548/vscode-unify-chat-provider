@@ -26,7 +26,11 @@ export async function editField<T>(
       await editTextField(field as TextFieldDef<T, keyof T>, draft, context);
       break;
     case 'number':
-      await editNumericField(field as NumericFieldDef<T, keyof T>, draft);
+      await editNumericField(
+        field as NumericFieldDef<T, keyof T>,
+        draft,
+        context,
+      );
       break;
     case 'picker':
       await editPickerField(
@@ -80,7 +84,13 @@ async function editTextField<T>(
 async function editNumericField<T>(
   field: NumericFieldDef<T, keyof T>,
   draft: T,
+  context: FieldContext,
 ): Promise<void> {
+  const prompt =
+    typeof field.prompt === 'function'
+      ? field.prompt(draft, context)
+      : field.prompt;
+
   const currentValue = field.getValue
     ? field.getValue(draft)
     : (draft[field.key] as number | undefined);
@@ -95,7 +105,7 @@ async function editNumericField<T>(
       };
 
   const val = await showInput({
-    prompt: field.prompt,
+    prompt,
     placeHolder: field.placeholder || 'Leave blank for default',
     value: currentValue?.toString() || '',
     validateInput: validator,
