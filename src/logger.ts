@@ -8,6 +8,7 @@ const CHANNEL_NAME = 'Unify Chat Provider';
 
 let channel: vscode.LogOutputChannel | undefined;
 let nextRequestId = 1;
+let nextHttpLogId = 1;
 let hasShownChannel = false;
 
 /**
@@ -60,6 +61,103 @@ function maskValue(value?: string): string {
   return `${value.slice(0, 4)}…${value.slice(-4)}`;
 }
 
+function sanitizeForLog(value: unknown, seen: WeakSet<object>): unknown {
+  const utf8Decoder = new TextDecoder('utf-8');
+
+  if (value === null) {
+    return null;
+  }
+
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return value;
+  }
+  if (typeof value === 'bigint') {
+    return value.toString();
+  }
+  if (typeof value === 'symbol') {
+    return value.toString();
+  }
+  if (typeof value === 'function') {
+    return '[Function]';
+  }
+  if (typeof value !== 'object') {
+    return String(value);
+  }
+
+  if (ArrayBuffer.isView(value)) {
+    const bytes = new Uint8Array(
+      value.buffer,
+      value.byteOffset,
+      value.byteLength,
+    );
+    return utf8Decoder.decode(bytes);
+  }
+  if (value instanceof ArrayBuffer) {
+    return utf8Decoder.decode(new Uint8Array(value));
+  }
+  if (
+    typeof SharedArrayBuffer !== 'undefined' &&
+    value instanceof SharedArrayBuffer
+  ) {
+    return utf8Decoder.decode(new Uint8Array(value));
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (value instanceof Error) {
+    return {
+      name: value.name,
+      message: value.message,
+      stack: value.stack,
+    };
+  }
+
+  if (seen.has(value)) {
+    return '[Circular]';
+  }
+  seen.add(value);
+
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeForLog(item, seen));
+  }
+
+  const out: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+    out[key] = sanitizeForLog(child, seen);
+  }
+  return out;
+}
+
+function stringifyForLog(value: unknown): string {
+  try {
+    const json = JSON.stringify(sanitizeForLog(value, new WeakSet()), null, 2);
+    return json ?? 'undefined';
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return `<<Failed to stringify for log: ${message}>>`;
+  }
+}
+
+export interface ProviderHttpLogger {
+  providerRequest(details: {
+    endpoint: string;
+    method?: string;
+    headers?: Record<string, string>;
+    body?: unknown;
+  }): void;
+  providerResponseMeta(response: Response): void;
+  retry?(
+    attempt: number,
+    maxRetries: number,
+    statusCode: number,
+    delayMs: number,
+  ): void;
+}
+
 /**
  * A logger bound to a specific request ID for contextual logging.
  *
@@ -69,7 +167,7 @@ function maskValue(value?: string): string {
  * - Detailed data (messages, options, request body, response chunks) only logged when verbose is enabled
  * - Errors are NOT logged here (caller handles error logging before throwing)
  */
-export class RequestLogger {
+export class RequestLogger implements ProviderHttpLogger {
   private readonly ch = getChannel();
   private providerContext: {
     label: string;
@@ -114,10 +212,8 @@ export class RequestLogger {
       return;
     }
     this.ch.info(
-      `[${this.requestId}] VSCode Input Messages:\n${JSON.stringify(
+      `[${this.requestId}] VSCode Input Messages:\n${stringifyForLog(
         messages,
-        null,
-        2,
       )}`,
     );
     this.ch.info(
@@ -349,10 +445,67 @@ export class RequestLogger {
   }
 }
 
+export class SimpleHttpLogger implements ProviderHttpLogger {
+  private readonly ch = getChannel();
+
+  constructor(
+    public readonly requestId: string,
+    private readonly context: {
+      purpose: string;
+      providerName: string;
+      providerType: string;
+    },
+  ) {}
+
+  providerRequest(details: {
+    endpoint: string;
+    method?: string;
+    headers?: Record<string, string>;
+    body?: unknown;
+  }): void {
+    const method = details.method || 'GET';
+    const maskedHeaders = maskSensitiveHeaders(details.headers ?? {});
+
+    this.ch.info(
+      `[${this.requestId}] ${this.context.purpose} | Provider: ${this.context.providerName} (${this.context.providerType}) → ${method} ${details.endpoint}`,
+    );
+    this.ch.info(
+      `[${this.requestId}] Headers:\n${stringifyForLog(maskedHeaders)}`,
+    );
+
+    const body = details.body ?? null;
+    if (body !== null) {
+      this.ch.info(`[${this.requestId}] Request:\n${stringifyForLog(body)}`);
+    }
+  }
+
+  providerResponseMeta(response: Response): void {
+    const contentType = response.headers.get('content-type') ?? 'unknown';
+    const message = `[${this.requestId}] ← Status ${response.status} ${
+      response.statusText || ''
+    } (${contentType})`.trim();
+    this.ch.info(message);
+  }
+
+  error(error: unknown): void {
+    this.ch.error(`[${this.requestId}] ✕ Error:`);
+    this.ch.error(error instanceof Error ? error : String(error));
+  }
+}
+
 /**
  * Create a new RequestLogger with a unique request ID.
  */
 export function createRequestLogger(): RequestLogger {
   const id = `req-${nextRequestId++}`;
   return new RequestLogger(id);
+}
+
+export function createSimpleHttpLogger(context: {
+  purpose: string;
+  providerName: string;
+  providerType: string;
+}): SimpleHttpLogger {
+  const id = `http-${nextHttpLogId++}`;
+  return new SimpleHttpLogger(id, context);
 }

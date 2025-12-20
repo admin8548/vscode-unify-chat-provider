@@ -3,7 +3,8 @@ import {
   ProvideLanguageModelChatResponseOptions,
   CancellationToken,
 } from 'vscode';
-import { RequestLogger } from '../../logger';
+import { createSimpleHttpLogger } from '../../logger';
+import type { ProviderHttpLogger, RequestLogger } from '../../logger';
 import { ThinkingBlockMetadata } from '../types';
 import { ApiProvider } from '../interface';
 import OpenAI from 'openai';
@@ -69,7 +70,7 @@ export class OpenAIResponsesProvider implements ApiProvider {
    * Create an OpenAI client with custom fetch for retry support.
    * A new client is created per request to enable per-request logging.
    */
-  private createClient(logger?: RequestLogger): OpenAI {
+  private createClient(logger?: ProviderHttpLogger): OpenAI {
     const customFetch = async (
       input: RequestInfo | URL,
       init?: RequestInit,
@@ -342,7 +343,7 @@ export class OpenAIResponsesProvider implements ApiProvider {
         properties: {},
         required: [],
       },
-      strict: true,
+      strict: false,
     }));
   }
 
@@ -730,12 +731,22 @@ export class OpenAIResponsesProvider implements ApiProvider {
   }
 
   async getAvailableModels(): Promise<ModelConfig[]> {
-    const result: ModelConfig[] = [];
-    const client = this.createClient();
-    const page = await client.models.list({ headers: this.buildHeaders() });
-    for await (const model of page) {
-      result.push({ id: model.id });
+    const logger = createSimpleHttpLogger({
+      purpose: 'Get Available Models',
+      providerName: this.config.name,
+      providerType: this.config.type,
+    });
+    try {
+      const result: ModelConfig[] = [];
+      const client = this.createClient(logger);
+      const page = await client.models.list({ headers: this.buildHeaders() });
+      for await (const model of page) {
+        result.push({ id: model.id });
+      }
+      return result;
+    } catch (error) {
+      logger.error(error);
+      throw error;
     }
-    return result;
   }
 }

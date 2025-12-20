@@ -4,7 +4,8 @@ import {
   CancellationToken,
 } from 'vscode';
 import * as vscode from 'vscode';
-import { RequestLogger } from '../../logger';
+import { createSimpleHttpLogger } from '../../logger';
+import type { ProviderHttpLogger, RequestLogger } from '../../logger';
 import { ApiProvider } from '../interface';
 import { ModelConfig, PerformanceTrace, ProviderConfig } from '../../types';
 import { Ollama } from 'ollama';
@@ -67,7 +68,7 @@ export class OllamaProvider implements ApiProvider {
    */
   private createClient(
     headers?: Record<string, string>,
-    logger?: RequestLogger,
+    logger?: ProviderHttpLogger,
   ): Ollama {
     const customFetch = async (
       input: RequestInfo | URL,
@@ -750,11 +751,23 @@ export class OllamaProvider implements ApiProvider {
   }
 
   async getAvailableModels(): Promise<ModelConfig[]> {
+    const logger = createSimpleHttpLogger({
+      purpose: 'Get Available Models',
+      providerName: this.config.name,
+      providerType: this.config.type,
+    });
     const headers = this.buildHeaders();
-    const client = this.createClient(headers);
-    const list = await client.list();
-    return list.models.map((model) => ({
-      id: model.name,
-    }));
+    const client = this.createClient(headers, logger);
+
+    try {
+      const list = await client.list();
+      const result = list.models.map((model) => ({
+        id: model.name,
+      }));
+      return result;
+    } catch (error) {
+      logger.error(error);
+      throw error;
+    }
   }
 }

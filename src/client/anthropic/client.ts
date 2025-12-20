@@ -16,7 +16,8 @@ import type {
   MessageCreateParamsStreaming,
   BetaTool,
 } from '@anthropic-ai/sdk/resources/beta/messages';
-import type { RequestLogger } from '../../logger';
+import { createSimpleHttpLogger } from '../../logger';
+import type { ProviderHttpLogger, RequestLogger } from '../../logger';
 import { ApiProvider } from '../interface';
 import {
   bodyInitToLoggableValue,
@@ -66,7 +67,7 @@ export class AnthropicProvider implements ApiProvider {
    * Create an Anthropic client with custom fetch for retry support.
    * A new client is created per request to enable per-request logging.
    */
-  private createClient(logger?: RequestLogger): Anthropic {
+  private createClient(logger?: ProviderHttpLogger): Anthropic {
     const customFetch = async (
       input: RequestInfo | URL,
       init?: RequestInit,
@@ -1016,7 +1017,7 @@ export class AnthropicProvider implements ApiProvider {
         return event.message;
 
       case 'content_block_start':
-        snapshot.content.push(event.content_block);
+        snapshot.content[event.index] = event.content_block;
         return snapshot;
 
       case 'content_block_delta': {
@@ -1167,12 +1168,18 @@ export class AnthropicProvider implements ApiProvider {
    * Uses the ListModels endpoint with pagination support
    */
   async getAvailableModels(): Promise<ModelConfig[]> {
+    const logger = createSimpleHttpLogger({
+      purpose: 'Get Available Models',
+      providerName: this.config.name,
+      providerType: this.config.type,
+    });
     const allModels: ModelConfig[] = [];
     let afterId: string | undefined;
 
     try {
+      const client = this.createClient(logger);
+
       do {
-        const client = this.createClient();
         const page = await client.models.list(
           { after_id: afterId },
           { headers: this.buildHeaders() },
@@ -1186,8 +1193,10 @@ export class AnthropicProvider implements ApiProvider {
         }
 
         afterId = page.has_more && page.last_id ? page.last_id : undefined;
-      } while (true);
+      } while (afterId);
+      return allModels;
     } catch (error) {
+      logger.error(error);
       // Re-throw with more context
       if (error instanceof Error) {
         throw new Error(`Failed to get available models: ${error.message}`);
