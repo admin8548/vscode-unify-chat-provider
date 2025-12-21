@@ -6,5 +6,6 @@ export {
   addProvider,
   addProviderFromConfig,
   addProviderFromWellKnownList,
+  importProviders,
   removeProvider,
 } from './provider-ui';

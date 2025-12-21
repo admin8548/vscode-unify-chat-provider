@@ -33,6 +33,11 @@ export async function addProviderFromWellKnownList(
   await runUiStack(ctx, { kind: 'wellKnownProviderList' });
 }
 
+export async function importProviders(store: ConfigStore): Promise<void> {
+  const ctx: UiContext = { store };
+  await runUiStack(ctx, { kind: 'importProviders' });
+}
+
 export async function removeProvider(store: ConfigStore): Promise<void> {
   await runRemoveProviderScreen(store);
 }

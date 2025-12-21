@@ -16,7 +16,12 @@ import { ProviderConfig } from '../../types';
 import { getAllModelsForProvider } from '../../utils';
 
 type ProviderListItem = vscode.QuickPickItem & {
-  action?: 'add' | 'add-from-wellknown' | 'add-from-base64' | 'provider';
+  action?:
+    | 'add'
+    | 'add-from-wellknown'
+    | 'add-from-base64'
+    | 'import-from-other-applications'
+    | 'provider';
   providerName?: string;
 };
 
@@ -88,6 +93,13 @@ export async function runProviderListScreen(
     };
   }
 
+  if (selection.action === 'import-from-other-applications') {
+    return {
+      kind: 'push',
+      route: { kind: 'importProviders' },
+    };
+  }
+
   if (selection.providerName) {
     const existing = ctx.store.getProvider(selection.providerName);
     if (!existing) {
@@ -142,6 +154,11 @@ async function buildProviderListItems(
     {
       label: '$(file-code) Add From Config...',
       action: 'add-from-base64',
+      alwaysShow: true,
+    },
+    {
+      label: '$(git-stash) Import From Other Applications...',
+      action: 'import-from-other-applications',
       alwaysShow: true,
     },
   ];

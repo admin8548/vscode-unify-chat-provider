@@ -87,6 +87,10 @@ export interface TimeoutFormRoute {
   draft: ProviderFormDraft;
 }
 
+export interface ImportProvidersRoute {
+  kind: 'importProviders';
+}
+
 export type UiRoute =
   | ProviderListRoute
   | ProviderFormRoute
@@ -97,7 +101,8 @@ export type UiRoute =
   | ModelFormRoute
   | ModelViewRoute
   | ModelSelectionRoute
-  | TimeoutFormRoute;
+  | TimeoutFormRoute
+  | ImportProvidersRoute;
 
 export type ModelFormResult =
   | { kind: 'saved'; model: ModelConfig; originalId?: string }

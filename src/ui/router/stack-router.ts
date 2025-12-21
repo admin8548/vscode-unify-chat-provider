@@ -11,6 +11,7 @@ import { runTimeoutFormScreen } from '../screens/timeout-form-screen';
 import { runWellKnownProviderApiKeyScreen } from '../screens/well-known-provider-api-key-screen';
 import { runWellKnownProviderListScreen } from '../screens/well-known-provider-list-screen';
 import { runWellKnownProviderNameScreen } from '../screens/well-known-provider-name-screen';
+import { runImportProvidersScreen } from '../screens/import-providers-screen';
 
 export async function runUiStack(
   ctx: UiContext,
@@ -80,6 +81,8 @@ async function dispatchRoute(
       return runModelSelectionScreen(ctx, route, resume);
     case 'timeoutForm':
       return runTimeoutFormScreen(ctx, route, resume);
+    case 'importProviders':
+      return runImportProvidersScreen(ctx, route, resume);
     default:
       return assertNever(route);
   }
@@ -88,4 +91,3 @@ async function dispatchRoute(
 function assertNever(value: never): never {
   throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
 }
-
