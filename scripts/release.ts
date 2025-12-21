@@ -184,6 +184,8 @@ try {
   // Create git tag after successful packaging/publishing to avoid manual cleanup on failure
   if (doCommitAndTag) {
     await ensureGitTag(repoRoot, tagName);
+    // Push tag to remote for GitHub release
+    await runInherit(repoRoot, 'git', ['push', 'origin', tagName]);
   }
 
   if (!skipGitHub) {
