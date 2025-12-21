@@ -14,6 +14,10 @@ import { duplicateProvider, saveProviderDraft } from '../provider-ops';
 import { createProviderDraft } from '../form-utils';
 import { ProviderConfig } from '../../types';
 import { getAllModelsForProvider } from '../../utils';
+import {
+  deleteProviderApiKeySecretIfUnused,
+  resolveApiKeyForExportOrShowError,
+} from '../../api-key-utils';
 
 type ProviderListItem = vscode.QuickPickItem & {
   action?:
@@ -44,7 +48,13 @@ export async function runProviderListScreen(
       if (buttonIndex === 0) {
         const provider = ctx.store.getProvider(item.providerName);
         if (provider) {
-          await showCopiedBase64Config(provider);
+          const exportProvider = { ...provider };
+          const ok = await resolveApiKeyForExportOrShowError(
+            ctx.apiKeyStore,
+            exportProvider,
+          );
+          if (!ok) return;
+          await showCopiedBase64Config(exportProvider);
         }
         return;
       }
@@ -52,7 +62,7 @@ export async function runProviderListScreen(
       if (buttonIndex === 1) {
         const provider = ctx.store.getProvider(item.providerName);
         if (provider) {
-          await duplicateProvider(ctx.store, provider);
+          await duplicateProvider(ctx.store, ctx.apiKeyStore, provider);
           qp.items = await buildProviderListItems(ctx.store);
         }
         return;
@@ -64,6 +74,11 @@ export async function runProviderListScreen(
         qp.ignoreFocusOut = false;
 
         if (!confirmed) return;
+        await deleteProviderApiKeySecretIfUnused({
+          apiKeyStore: ctx.apiKeyStore,
+          providers: ctx.store.endpoints,
+          providerName: item.providerName,
+        });
         await ctx.store.removeProvider(item.providerName);
         showDeletedMessage(item.providerName, 'Provider');
         qp.items = await buildProviderListItems(ctx.store);
@@ -126,6 +141,7 @@ export async function runProviderListScreen(
           saveProviderDraft({
             draft,
             store: ctx.store,
+            apiKeyStore: ctx.apiKeyStore,
             existing,
             originalName: existing.name,
           }),

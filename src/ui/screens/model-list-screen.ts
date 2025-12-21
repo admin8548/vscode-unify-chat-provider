@@ -25,6 +25,10 @@ import {
   duplicateProvider,
 } from '../provider-ops';
 import {
+  deleteProviderApiKeySecretIfUnused,
+  resolveApiKeyForExportOrShowError,
+} from '../../api-key-utils';
+import {
   officialModelsManager,
   OfficialModelsFetchState,
 } from '../../official-models-manager';
@@ -224,13 +228,18 @@ export async function runModelListScreen(
   if (selection.action === 'provider-copy') {
     if (!route.draft) return { kind: 'stay' };
     const configToCopy = buildProviderConfigFromDraft(route.draft);
+    const ok = await resolveApiKeyForExportOrShowError(
+      ctx.apiKeyStore,
+      configToCopy,
+    );
+    if (!ok) return { kind: 'stay' };
     await showCopiedBase64Config(configToCopy);
     return { kind: 'stay' };
   }
 
   if (selection.action === 'provider-duplicate') {
     if (!route.existing) return { kind: 'stay' };
-    await duplicateProvider(ctx.store, route.existing);
+    await duplicateProvider(ctx.store, ctx.apiKeyStore, route.existing);
     return { kind: 'stay' };
   }
 
@@ -238,6 +247,11 @@ export async function runModelListScreen(
     if (!route.existing || !route.originalName) return { kind: 'stay' };
     const confirmed = await confirmDelete(route.originalName, 'provider');
     if (!confirmed) return { kind: 'stay' };
+    await deleteProviderApiKeySecretIfUnused({
+      apiKeyStore: ctx.apiKeyStore,
+      providers: ctx.store.endpoints,
+      providerName: route.originalName,
+    });
     await ctx.store.removeProvider(route.originalName);
     showDeletedMessage(route.originalName, 'Provider');
     return { kind: 'pop' };

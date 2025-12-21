@@ -42,7 +42,7 @@ export interface TextFieldDef<T, K extends keyof T> extends BaseFieldDef<T, K> {
   /** Transform the value before storing */
   transform?: (value: string) => string | undefined;
   /** Get the current value for display */
-  getValue?: (draft: T) => string;
+  getValue?: (draft: T, context?: FieldContext) => string;
   /** Get the description for the form item */
   getDescription?: (draft: T, context?: FieldContext) => string | undefined;
 }
@@ -281,7 +281,7 @@ function getFieldDescription<T>(
   switch (field.type) {
     case 'text': {
       const value = field.getValue
-        ? field.getValue(draft)
+        ? field.getValue(draft, context)
         : (draft[field.key] as string | undefined);
       if (field.password && value) return '••••••••';
       return value || (field.required ? '(required)' : '(optional)');

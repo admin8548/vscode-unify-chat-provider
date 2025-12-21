@@ -13,12 +13,18 @@ import {
   ProviderType,
   PROVIDER_TYPES,
 } from '../client/definitions';
+import {
+  ApiKeyStorageStatus,
+  isApiKeySecretRef,
+} from '../api-key-secret-store';
 
 /**
  * Context for provider form fields.
  */
 export interface ProviderFieldContext extends FieldContext {
   store: ConfigStore;
+  apiKeyStatus?: ApiKeyStorageStatus;
+  storeApiKeyInSettings: boolean;
   originalName?: string;
   onEditModels: (draft: ProviderFormDraft) => Promise<void>;
   onEditTimeout: (draft: ProviderFormDraft) => Promise<void>;
@@ -119,9 +125,37 @@ export const providerFormSchema: FormSchema<ProviderFormDraft> = {
       icon: 'key',
       section: 'primary',
       prompt: 'Enter your API key',
+      placeholder: 'Leave blank if not required',
       password: true,
+      getValue: (draft, context) => {
+        const apiKey = draft.apiKey?.trim() || '';
+        if (!apiKey) return '';
+
+        const ctx = context as ProviderFieldContext | undefined;
+        const status = ctx?.apiKeyStatus;
+        if (status?.kind === 'plain' || status?.kind === 'secret') {
+          return status.apiKey;
+        }
+        if (status?.kind === 'missing-secret') {
+          return '';
+        }
+
+        return isApiKeySecretRef(apiKey) ? '' : apiKey;
+      },
       transform: (value) => value.trim() || undefined,
-      getDescription: (draft) => (draft.apiKey ? '••••••••' : '(optional)'),
+      getDescription: (draft, context) => {
+        const apiKey = draft.apiKey?.trim() || undefined;
+        if (!apiKey) return '(optional)';
+
+        const ctx = context as ProviderFieldContext | undefined;
+        const status = ctx?.apiKeyStatus;
+
+        if (status?.kind === 'missing-secret') {
+          return 'Missing (re-enter required)';
+        }
+
+        return '••••••••';
+      },
     },
     // Models field (custom)
     {

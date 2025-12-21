@@ -54,7 +54,7 @@ async function editTextField<T>(
   context: FieldContext,
 ): Promise<void> {
   const currentValue = field.getValue
-    ? field.getValue(draft)
+    ? field.getValue(draft, context)
     : (draft[field.key] as string | undefined) ?? '';
 
   const val = await showInput({

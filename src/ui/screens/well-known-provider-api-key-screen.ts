@@ -40,6 +40,7 @@ export async function runWellKnownProviderApiKeyScreen(
         saveProviderDraft({
           draft: route.draft,
           store: ctx.store,
+          apiKeyStore: ctx.apiKeyStore,
         }),
       afterSave: 'popToRoot',
     },

@@ -120,6 +120,11 @@
           "description": "Enable verbose logging of requests and responses.",
           "default": false
         },
+        "unifyChatProvider.storeApiKeyInSettings": {
+          "type": "boolean",
+          "description": "Store API keys in settings.json instead of VS Code Secret Storage. Changing this setting will migrate existing API keys between storage locations (may expose secrets in plain text).",
+          "default": false
+        },
         "unifyChatProvider.endpoints": {
           "type": "array",
           "description": "List of LLM API provider endpoints.",

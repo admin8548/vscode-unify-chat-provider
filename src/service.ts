@@ -11,6 +11,7 @@ import { getBaseModelId } from './model-id-utils';
 import { createProvider } from './client/utils';
 import { formatModelDetail } from './ui/form-utils';
 import { getAllModelsForProvider } from './utils';
+import { ApiKeySecretStore } from './api-key-secret-store';
 
 export class UnifyChatService implements vscode.LanguageModelChatProvider {
   private readonly clients = new Map<string, ApiProvider>();
@@ -20,7 +21,10 @@ export class UnifyChatService implements vscode.LanguageModelChatProvider {
   readonly onDidChangeLanguageModelChatInformation =
     this.onDidChangeModelInfoEmitter.event;
 
-  constructor(private readonly configStore: ConfigStore) {}
+  constructor(
+    private readonly configStore: ConfigStore,
+    private readonly apiKeyStore: ApiKeySecretStore,
+  ) {}
 
   /**
    * Provide information about available models
@@ -158,6 +162,57 @@ export class UnifyChatService implements vscode.LanguageModelChatProvider {
     return client;
   }
 
+  private async resolveProvider(
+    provider: ProviderConfig,
+  ): Promise<ProviderConfig> {
+    const status = await this.apiKeyStore.getStatus(provider.apiKey);
+
+    if (status.kind === 'unset' || status.kind === 'plain') {
+      return provider;
+    }
+
+    if (status.kind === 'secret') {
+      return { ...provider, apiKey: status.apiKey };
+    }
+
+    const confirm = await vscode.window.showErrorMessage(
+      `API key for provider "${provider.name}" is missing. Please re-enter it to continue.`,
+      { modal: true },
+      'Re-enter API Key',
+    );
+    if (confirm !== 'Re-enter API Key') {
+      throw new Error(
+        `API key for provider "${provider.name}" is missing. Please re-enter it and try again.`,
+      );
+    }
+
+    const entered = await vscode.window.showInputBox({
+      title: `API Key (${provider.name})`,
+      prompt: `Enter the API key for "${provider.name}"`,
+      password: true,
+      ignoreFocusOut: true,
+    });
+    const apiKey = entered?.trim();
+    if (!apiKey) {
+      throw new Error(
+        `API key for provider "${provider.name}" is missing. Please re-enter it and try again.`,
+      );
+    }
+
+    if (this.configStore.storeApiKeyInSettings) {
+      const updated = this.configStore.endpoints.map((p) =>
+        p.name === provider.name ? { ...p, apiKey } : p,
+      );
+      await this.configStore.setEndpoints(updated);
+      this.clients.delete(provider.name);
+      return { ...provider, apiKey };
+    }
+
+    await this.apiKeyStore.set(status.ref, apiKey);
+    this.clients.delete(provider.name);
+    return { ...provider, apiKey };
+  }
+
   /**
    * Handle chat request and stream response
    */
@@ -182,7 +237,8 @@ export class UnifyChatService implements vscode.LanguageModelChatProvider {
       throw new Error(`Model not found: ${model.id}`);
     }
 
-    const { provider, model: modelConfig } = found;
+    const { provider: _provider, model: modelConfig } = found;
+    const provider = await this.resolveProvider(_provider);
 
     logger.start({
       providerName: provider.name,
@@ -254,7 +310,8 @@ export class UnifyChatService implements vscode.LanguageModelChatProvider {
 
     // Use client's estimation if available, otherwise use default
     if (found) {
-      const client = this.getClient(found.provider);
+      const provider = await this.resolveProvider(found.provider);
+      const client = this.getClient(provider);
       return client.estimateTokenCount(content);
     }
 

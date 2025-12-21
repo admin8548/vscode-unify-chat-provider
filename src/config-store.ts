@@ -21,6 +21,7 @@ const CONFIG_NAMESPACE = 'unifyChatProvider';
  */
 export interface ExtensionConfiguration {
   endpoints: ProviderConfig[];
+  storeApiKeyInSettings: boolean;
   verbose: boolean;
 }
 
@@ -63,11 +64,21 @@ export class ConfigStore {
   }
 
   /**
+   * Whether to store API keys in settings.json instead of VS Code Secret Storage.
+   */
+  get storeApiKeyInSettings(): boolean {
+    const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
+    const raw = config.get<unknown>('storeApiKeyInSettings', false);
+    return typeof raw === 'boolean' ? raw : false;
+  }
+
+  /**
    * Get the full extension configuration
    */
   get configuration(): ExtensionConfiguration {
     return {
       endpoints: this.endpoints,
+      storeApiKeyInSettings: this.storeApiKeyInSettings,
       verbose: this.verbose,
     };
   }

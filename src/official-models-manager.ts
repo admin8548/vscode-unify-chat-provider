@@ -3,6 +3,7 @@ import { ModelConfig, ProviderConfig } from './types';
 import { createProvider } from './client/utils';
 import { mergeWithWellKnownModels } from './well-known/models';
 import { stableStringify } from './config-ops';
+import { ApiKeySecretStore } from './api-key-secret-store';
 
 /**
  * State for a single provider's official models fetch
@@ -57,6 +58,7 @@ const STATE_KEY = 'officialModelsState';
 export class OfficialModelsManager {
   private state: PersistedState = {};
   private extensionContext?: vscode.ExtensionContext;
+  private apiKeyStore!: ApiKeySecretStore;
   private fetchInProgress = new Map<string, Promise<ModelConfig[]>>();
   private readonly onDidUpdateEmitter = new vscode.EventEmitter<string>();
 
@@ -66,8 +68,12 @@ export class OfficialModelsManager {
   /**
    * Initialize the manager with VS Code extension context
    */
-  async initialize(context: vscode.ExtensionContext): Promise<void> {
+  async initialize(
+    context: vscode.ExtensionContext,
+    apiKeyStore: ApiKeySecretStore,
+  ): Promise<void> {
     this.extensionContext = context;
+    this.apiKeyStore = apiKeyStore;
     await this.loadState();
   }
 
@@ -214,7 +220,8 @@ export class OfficialModelsManager {
     this.onDidUpdateEmitter.fire(providerName);
 
     try {
-      const client = createProvider(provider);
+      const resolvedProvider = await this.resolveProvider(provider);
+      const client = createProvider(resolvedProvider);
 
       if (!client.getAvailableModels) {
         throw new Error('Provider does not support fetching available models');
@@ -283,6 +290,24 @@ export class OfficialModelsManager {
 
       return [];
     }
+  }
+
+  private async resolveProvider(
+    provider: ProviderConfig,
+  ): Promise<ProviderConfig> {
+    const status = await this.apiKeyStore.getStatus(provider.apiKey);
+
+    if (status.kind === 'unset' || status.kind === 'plain') {
+      return provider;
+    }
+
+    if (status.kind === 'secret') {
+      return { ...provider, apiKey: status.apiKey };
+    }
+
+    throw new Error(
+      `API key for provider "${provider.name}" is missing. Please re-enter it.`,
+    );
   }
 
   /**

@@ -3,6 +3,8 @@ import type { ConfigStore } from '../../config-store';
 import { confirmRemove, pickQuickItem, showRemovedMessage } from '../component';
 import { getAllModelsForProvider } from '../../utils';
 import { ProviderConfig } from '../../types';
+import { ApiKeySecretStore } from '../../api-key-secret-store';
+import { deleteProviderApiKeySecretIfUnused } from '../../api-key-utils';
 
 async function buildProviderItem(
   p: ProviderConfig,
@@ -19,6 +21,7 @@ async function buildProviderItem(
 
 export async function runRemoveProviderScreen(
   store: ConfigStore,
+  apiKeyStore: ApiKeySecretStore,
 ): Promise<void> {
   const endpoints = store.endpoints;
   if (endpoints.length === 0) {
@@ -41,7 +44,12 @@ export async function runRemoveProviderScreen(
   const confirmed = await confirmRemove(selection.providerName, 'provider');
   if (!confirmed) return;
 
+  await deleteProviderApiKeySecretIfUnused({
+    apiKeyStore,
+    providers: store.endpoints,
+    providerName: selection.providerName,
+  });
+
   await store.removeProvider(selection.providerName);
   showRemovedMessage(selection.providerName, 'Provider');
 }
-

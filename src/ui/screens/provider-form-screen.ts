@@ -28,6 +28,10 @@ import {
   duplicateProvider,
   saveProviderDraft,
 } from '../provider-ops';
+import {
+  deleteProviderApiKeySecretIfUnused,
+  resolveApiKeyForExportOrShowError,
+} from '../../api-key-utils';
 
 const providerSettingsSchema = {
   ...providerFormSchema,
@@ -48,8 +52,12 @@ export async function runProviderFormScreen(
   const originalName = route.originalName;
   const isSettings = route.mode === 'settings';
 
+  const apiKeyStatus = await ctx.apiKeyStore.getStatus(draft.apiKey);
+
   const context: ProviderFieldContext = {
     store: ctx.store,
+    apiKeyStatus,
+    storeApiKeyInSettings: ctx.store.storeApiKeyInSettings,
     originalName,
     onEditModels: async () => {},
     onEditTimeout: async () => {},
@@ -86,6 +94,7 @@ export async function runProviderFormScreen(
       const saved = await saveProviderDraft({
         draft,
         store: ctx.store,
+        apiKeyStore: ctx.apiKeyStore,
         existing,
         originalName,
       });
@@ -97,6 +106,11 @@ export async function runProviderFormScreen(
   if (!isSettings && selection.action === 'delete' && existing) {
     const confirmed = await confirmDelete(existing.name, 'provider');
     if (confirmed) {
+      await deleteProviderApiKeySecretIfUnused({
+        apiKeyStore: ctx.apiKeyStore,
+        providers: ctx.store.endpoints,
+        providerName: existing.name,
+      });
       await ctx.store.removeProvider(existing.name);
       showDeletedMessage(existing.name, 'Provider');
       return { kind: 'pop' };
@@ -106,12 +120,17 @@ export async function runProviderFormScreen(
 
   if (!isSettings && selection.action === 'copy') {
     const configToCopy = buildProviderConfigFromDraft(draft);
+    const ok = await resolveApiKeyForExportOrShowError(
+      ctx.apiKeyStore,
+      configToCopy,
+    );
+    if (!ok) return { kind: 'stay' };
     await showCopiedBase64Config(configToCopy);
     return { kind: 'stay' };
   }
 
   if (!isSettings && selection.action === 'duplicate' && existing) {
-    await duplicateProvider(ctx.store, existing);
+    await duplicateProvider(ctx.store, ctx.apiKeyStore, existing);
     return { kind: 'stay' };
   }
 
@@ -119,6 +138,7 @@ export async function runProviderFormScreen(
     const saved = await saveProviderDraft({
       draft,
       store: ctx.store,
+      apiKeyStore: ctx.apiKeyStore,
       existing,
       originalName,
     });

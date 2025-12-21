@@ -2,10 +2,12 @@ import type { ConfigStore } from '../../config-store';
 import type { ProviderType } from '../../client/definitions';
 import { ProviderConfig, ModelConfig, TimeoutConfig } from '../../types';
 import type { OfficialModelsFetchState } from '../../official-models-manager';
+import type { ApiKeySecretStore } from '../../api-key-secret-store';
 import type { ProviderFormDraft } from '../form-utils';
 
 export interface UiContext {
   store: ConfigStore;
+  apiKeyStore: ApiKeySecretStore;
 }
 
 export interface ProviderListRoute {

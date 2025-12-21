@@ -7,15 +7,74 @@ import {
 } from '../config-ops';
 import { showValidationErrors } from './component';
 import {
+  ApiKeySecretStore,
+  createApiKeySecretRef,
+  isApiKeySecretRef,
+} from '../api-key-secret-store';
+import { resolveApiKeyForExportOrShowError } from '../api-key-utils';
+import {
   normalizeProviderDraft,
   validateProviderForm,
   type ProviderFormDraft,
 } from './form-utils';
 import { ProviderConfig } from '../types';
 
+async function applyApiKeyStoragePolicy(options: {
+  store: ConfigStore;
+  apiKeyStore: ApiKeySecretStore;
+  provider: ProviderConfig;
+  existing?: ProviderConfig;
+}): Promise<ProviderConfig> {
+  const next = options.provider;
+  const storeApiKeyInSettings = options.store.storeApiKeyInSettings;
+
+  const existingRef =
+    options.existing?.apiKey && isApiKeySecretRef(options.existing.apiKey)
+      ? options.existing.apiKey
+      : undefined;
+
+  const status = await options.apiKeyStore.getStatus(next.apiKey);
+
+  if (storeApiKeyInSettings) {
+    if (status.kind === 'unset') {
+      next.apiKey = undefined;
+      return next;
+    }
+    if (status.kind === 'plain') {
+      next.apiKey = status.apiKey;
+      return next;
+    }
+    if (status.kind === 'secret') {
+      next.apiKey = status.apiKey;
+      return next;
+    }
+    next.apiKey = status.ref;
+    return next;
+  }
+
+  // Store in VS Code Secret Storage by default
+  if (status.kind === 'unset') {
+    next.apiKey = undefined;
+    return next;
+  }
+  if (status.kind === 'plain') {
+    const ref = existingRef ?? createApiKeySecretRef();
+    await options.apiKeyStore.set(ref, status.apiKey);
+    next.apiKey = ref;
+    return next;
+  }
+  if (status.kind === 'secret') {
+    next.apiKey = status.ref;
+    return next;
+  }
+  next.apiKey = status.ref;
+  return next;
+}
+
 export async function saveProviderDraft(options: {
   draft: ProviderFormDraft;
   store: ConfigStore;
+  apiKeyStore: ApiKeySecretStore;
   existing?: ProviderConfig;
   originalName?: string;
 }): Promise<'saved' | 'invalid'> {
@@ -29,7 +88,12 @@ export async function saveProviderDraft(options: {
     return 'invalid';
   }
 
-  const provider = normalizeProviderDraft(options.draft);
+  const provider = await applyApiKeyStoragePolicy({
+    store: options.store,
+    apiKeyStore: options.apiKeyStore,
+    provider: normalizeProviderDraft(options.draft),
+    existing: options.existing,
+  });
   if (options.originalName && provider.name !== options.originalName) {
     await options.store.removeProvider(options.originalName);
   }
@@ -44,6 +108,7 @@ export async function saveProviderDraft(options: {
 
 export async function duplicateProvider(
   store: ConfigStore,
+  apiKeyStore: ApiKeySecretStore,
   provider: ProviderConfig,
 ): Promise<void> {
   let baseName = provider.name;
@@ -57,6 +122,23 @@ export async function duplicateProvider(
 
   const duplicated = deepClone(provider);
   duplicated.name = newName;
+
+  const ok = await resolveApiKeyForExportOrShowError(
+    apiKeyStore,
+    duplicated,
+    `Provider "${provider.name}" API key is missing. Please re-enter it before duplicating.`,
+  );
+  if (!ok) return;
+
+  if (!store.storeApiKeyInSettings) {
+    if (duplicated.apiKey) {
+      const newRef = createApiKeySecretRef();
+      await apiKeyStore.set(newRef, duplicated.apiKey);
+      duplicated.apiKey = newRef;
+    } else {
+      duplicated.apiKey = undefined;
+    }
+  }
 
   await store.upsertProvider(duplicated);
   vscode.window.showInformationMessage(`Provider duplicated as "${newName}".`);
