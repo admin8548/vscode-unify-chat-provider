@@ -1,13 +1,21 @@
 import { promises as fs } from 'fs';
 import { claudeCodeMigrationSource } from './claude-code';
+import { codexMigrationSource } from './codex';
 import { normalizeConfigFilePathInput } from './fs-utils';
-import type { ProviderMigrationCandidate, ProviderMigrationSource } from './types';
+import type {
+  ProviderMigrationCandidate,
+  ProviderMigrationSource,
+} from './types';
 
-export type { ProviderMigrationCandidate, ProviderMigrationSource } from './types';
+export type {
+  ProviderMigrationCandidate,
+  ProviderMigrationSource,
+} from './types';
 export { normalizeConfigFilePathInput } from './fs-utils';
 
 export const PROVIDER_MIGRATION_SOURCES: readonly ProviderMigrationSource[] = [
   claudeCodeMigrationSource,
+  codexMigrationSource,
 ];
 
 export function getProviderMigrationSource(
