@@ -174,7 +174,7 @@
               },
               "extraHeaders": {
                 "type": "object",
-                "description": "Extra headers to include in requests.",
+                "description": "Extra headers to include in requests. Header values support `${APIKEY}` to reference the provider apiKey.",
                 "additionalProperties": {
                   "type": "string"
                 }
@@ -422,7 +422,7 @@
                         },
                         "extraHeaders": {
                           "type": "object",
-                          "description": "Extra headers to include in requests.",
+                          "description": "Extra headers to include in requests. Header values support `${APIKEY}` to reference the provider apiKey.",
                           "additionalProperties": {
                             "type": "string"
                           }

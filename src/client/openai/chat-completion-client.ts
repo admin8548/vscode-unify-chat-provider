@@ -63,6 +63,7 @@ export class OpenAIChatCompletionProvider implements ApiProvider {
 
   private buildHeaders(modelConfig?: ModelConfig): Record<string, string> {
     const headers = mergeHeaders(
+      this.config.apiKey,
       this.config.extraHeaders,
       modelConfig?.extraHeaders,
     );

@@ -210,9 +210,10 @@ export function buildBaseUrl(
 }
 
 /**
- * Merge multiple header objects into one.
+ * Merge multiple header objects into one, and resolve placeholders in values.
  */
 export function mergeHeaders(
+  apiKey: string | undefined,
   ...sources: (Record<string, string> | undefined)[]
 ): Record<string, string> {
   const result: Record<string, string> = {};
@@ -221,7 +222,33 @@ export function mergeHeaders(
       Object.assign(result, source);
     }
   }
+
+  applyHeaderValuePlaceholders(result, { APIKEY: apiKey });
+
   return result;
+}
+
+const HEADER_VALUE_PLACEHOLDER_PATTERN = /\$\{([A-Z0-9_]+)\}/g;
+
+/**
+ * Replace `${VARNAME}` placeholders in header values using provided variables.
+ */
+export function applyHeaderValuePlaceholders(
+  headers: Record<string, string>,
+  variables: Record<string, string | undefined>,
+): void {
+  for (const [key, value] of Object.entries(headers)) {
+    const replaced = value.replace(
+      HEADER_VALUE_PLACEHOLDER_PATTERN,
+      (match: string, variableName: string): string => {
+        const replacement = variables[variableName];
+        return replacement !== undefined ? replacement : match;
+      },
+    );
+    if (replaced !== value) {
+      headers[key] = replaced;
+    }
+  }
 }
 
 /**
