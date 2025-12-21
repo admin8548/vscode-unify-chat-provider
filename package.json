@@ -439,6 +439,8 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p .",
     "watch": "tsc -watch -p .",
+    "release": "bun run scripts/release.ts",
+    "release:dry": "bun run scripts/release.ts --dry-run",
     "test:build": "tsc -p tsconfig.tests.json",
     "test": "npm run test:build && node --test out-tests/test/**/*.test.js",
     "test:unit": "npm run test:build && node --test out-tests/test/config/*.test.js out-tests/test/client/*.test.js out-tests/test/provider/*.test.js",
