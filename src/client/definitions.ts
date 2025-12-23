@@ -222,9 +222,19 @@ export const FEATURES: Record<FeatureId, Feature> = {
     supportedProviders: ['openrouter.ai'],
   },
   [FeatureId.OpenAIUseThinkingParam]: {
-    supportedProviders: ['api.deepseek.com', 'api.xiaomimimo.com'],
+    supportedProviders: [
+      'api.deepseek.com',
+      'api.xiaomimimo.com',
+      'open.bigmodel.cn',
+      'api.z.ai',
+    ],
   },
   [FeatureId.OpenAIUseReasoningContent]: {
-    supportedProviders: ['api.deepseek.com', 'api.xiaomimimo.com'],
+    supportedProviders: [
+      'api.deepseek.com',
+      'api.xiaomimimo.com',
+      'open.bigmodel.cn',
+      'api.z.ai',
+    ],
   },
 };

@@ -30,6 +30,30 @@ export const WELL_KNOWN_PROVIDERS: ProviderConfig[] = [
     baseUrl: 'http://localhost:11434',
     models: [],
   },
+  {
+    name: 'ZhiPu AI',
+    type: 'openai-chat-completion',
+    baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+    models: wellKnowns('glm-4.7', 'glm-4.6v', 'glm-4.5-air', 'codegeex-4'),
+  },
+  {
+    name: 'ZhiPu AI (Coding Plan)',
+    type: 'openai-chat-completion',
+    baseUrl: 'https://open.bigmodel.cn/api/coding/paas/v4',
+    models: wellKnowns('glm-4.7', 'glm-4.6', 'glm-4.5-air'),
+  },
+  {
+    name: 'Z.AI',
+    type: 'openai-chat-completion',
+    baseUrl: 'https://api.z.ai/api/paas/v4',
+    models: wellKnowns('glm-4.7', 'glm-4.6v', 'glm-4.5-air', 'codegeex-4'),
+  },
+  {
+    name: 'Z.AI (Coding Plan)',
+    type: 'openai-chat-completion',
+    baseUrl: 'https://api.z.ai/api/coding/paas/v4',
+    models: wellKnowns('glm-4.7', 'glm-4.6', 'glm-4.5-air'),
+  },
 ];
 
 function wellKnowns(...ids: WellKnownModelId[]): ModelConfig[] {

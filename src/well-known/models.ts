@@ -492,6 +492,256 @@ const _WELL_KNOWN_MODELS = [
       imageInput: false,
     },
   },
+  {
+    id: 'glm-4.7',
+    name: 'GLM-4.7',
+    maxInputTokens: 200000,
+    maxOutputTokens: 128000,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+    },
+    capabilities: {
+      toolCalling: true,
+      imageInput: false,
+    },
+  },
+  {
+    id: 'glm-4.6',
+    name: 'GLM-4.6',
+    maxInputTokens: 200000,
+    maxOutputTokens: 128000,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+    },
+    capabilities: {
+      toolCalling: true,
+      imageInput: false,
+    },
+  },
+  {
+    id: 'glm-4.5',
+    name: 'GLM-4.5',
+    maxInputTokens: 128000,
+    maxOutputTokens: 96000,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+    },
+    capabilities: {
+      toolCalling: true,
+      imageInput: false,
+    },
+  },
+  {
+    id: 'glm-4.5-x',
+    name: 'GLM-4.5-X',
+    maxInputTokens: 128000,
+    maxOutputTokens: 96000,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+    },
+    capabilities: {
+      toolCalling: true,
+      imageInput: false,
+    },
+  },
+  {
+    id: 'glm-4.5-air',
+    name: 'GLM-4.5-Air',
+    maxInputTokens: 128000,
+    maxOutputTokens: 96000,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+    },
+    capabilities: {
+      toolCalling: true,
+      imageInput: false,
+    },
+  },
+  {
+    id: 'glm-4.5-airx',
+    name: 'GLM-4.5-AirX',
+    maxInputTokens: 128000,
+    maxOutputTokens: 96000,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+    },
+    capabilities: {
+      toolCalling: true,
+      imageInput: false,
+    },
+  },
+  {
+    id: 'glm-4-plus',
+    name: 'GLM-4-Plus',
+    maxInputTokens: 128000,
+    maxOutputTokens: 4096,
+    stream: true,
+    capabilities: {
+      toolCalling: true,
+      imageInput: false,
+    },
+  },
+  {
+    id: 'glm-4-air-250414',
+    alternativeIds: ['glm-4-air'],
+    name: 'GLM-4-Air-250414',
+    maxInputTokens: 128000,
+    maxOutputTokens: 16384,
+    stream: true,
+    capabilities: {
+      toolCalling: true,
+      imageInput: false,
+    },
+  },
+  {
+    id: 'glm-4-long',
+    name: 'GLM-4-Long',
+    maxInputTokens: 1000000,
+    maxOutputTokens: 4096,
+    stream: true,
+    capabilities: {
+      toolCalling: true,
+      imageInput: false,
+    },
+  },
+  {
+    id: 'glm-4-airx',
+    name: 'GLM-4-AirX',
+    maxInputTokens: 8192,
+    maxOutputTokens: 4096,
+    stream: true,
+    capabilities: {
+      toolCalling: true,
+      imageInput: false,
+    },
+  },
+  {
+    id: 'glm-4-flashx-250414',
+    alternativeIds: ['glm-4-flashx'],
+    name: 'GLM-4-FlashX-250414',
+    maxInputTokens: 128000,
+    maxOutputTokens: 16384,
+    stream: true,
+    capabilities: {
+      toolCalling: true,
+      imageInput: false,
+    },
+  },
+  {
+    id: 'glm-4.5-flash',
+    name: 'GLM-4.5-Flash',
+    maxInputTokens: 128000,
+    maxOutputTokens: 96000,
+    stream: true,
+    capabilities: {
+      toolCalling: true,
+      imageInput: false,
+    },
+  },
+  {
+    id: 'glm-4-flash-250414',
+    alternativeIds: ['glm-4-flash'],
+    name: 'GLM-4-Flash-250414',
+    maxInputTokens: 128000,
+    maxOutputTokens: 16384,
+    stream: true,
+    capabilities: {
+      toolCalling: true,
+      imageInput: false,
+    },
+  },
+  {
+    id: 'glm-4.6v',
+    name: 'GLM-4.6V',
+    maxInputTokens: 128000,
+    maxOutputTokens: 32768,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+      budgetTokens: 8192,
+    },
+    capabilities: {
+      toolCalling: true,
+      imageInput: true,
+    },
+  },
+  {
+    id: 'glm-4.5v',
+    name: 'GLM-4.5V',
+    maxInputTokens: 64000,
+    maxOutputTokens: 16384,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+      budgetTokens: 8192,
+    },
+    capabilities: {
+      toolCalling: true,
+      imageInput: true,
+    },
+  },
+  {
+    id: 'glm-4.1v-thinking-flashx',
+    name: 'GLM-4.1V-Thinking-FlashX',
+    maxInputTokens: 64000,
+    maxOutputTokens: 16384,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+      budgetTokens: 8192,
+    },
+    capabilities: {
+      toolCalling: true,
+      imageInput: true,
+    },
+  },
+  {
+    id: 'glm-4.6v-flash',
+    name: 'GLM-4.6V-Flash',
+    maxInputTokens: 128000,
+    maxOutputTokens: 32768,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+      budgetTokens: 16384,
+    },
+    capabilities: {
+      toolCalling: true,
+      imageInput: true,
+    },
+  },
+  {
+    id: 'glm-4.1v-thinking-flash',
+    name: 'GLM-4.1V-Thinking-Flash',
+    maxInputTokens: 64000,
+    maxOutputTokens: 16384,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+      budgetTokens: 8192,
+    },
+    capabilities: {
+      toolCalling: true,
+      imageInput: true,
+    },
+  },
+  {
+    id: 'codegeex-4',
+    name: 'CodeGeeX-4',
+    maxInputTokens: 128000,
+    maxOutputTokens: 32768,
+    stream: true,
+    capabilities: {
+      toolCalling: true,
+      imageInput: false,
+    },
+  },
 ] as const satisfies WellKnownModelConfig[];
 export const WELL_KNOWN_MODELS: WellKnownModelConfig[] = _WELL_KNOWN_MODELS;
 export type WellKnownModelId = (typeof _WELL_KNOWN_MODELS)[number]['id'];
