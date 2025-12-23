@@ -1,6 +1,6 @@
-<!-- <p align="center">
+<p align="center">
 <img src="./icon.png" style="width:100px;" />
-</p> -->
+</p>
 
 <h1 align="center">
 Unify Chat Provider
@@ -41,6 +41,7 @@ To be supplemented...
 - Support monitoring of balance usage.
 - Embedded functionality similar to [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI).
 - Context Indicator, official related issue：https://github.com/microsoft/vscode/issues/277871, https://github.com/microsoft/vscode/issues/277414
+- Multilingual support.
 
 ## License
 

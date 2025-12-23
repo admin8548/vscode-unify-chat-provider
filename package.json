@@ -27,7 +27,9 @@
     "zai",
     "xiaomimimo",
     "custom-models",
-    "自定义模型"
+    "custom-chat",
+    "自定义模型",
+    "自定义聊天"
   ],
   "publisher": "SmallMain",
   "icon": "icon.png",
