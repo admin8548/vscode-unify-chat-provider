@@ -79,25 +79,25 @@ export function registerCommands(
     vscode.commands.registerCommand('unifyChatProvider.removeProvider', () =>
       removeProvider(configStore, apiKeyStore),
     ),
-    vscode.commands.registerCommand(
-      'unifyChatProvider.addProviderFromConfig',
-      () => addProviderFromConfig(configStore, apiKeyStore),
+    vscode.commands.registerCommand('unifyChatProvider.importConfig', () =>
+      addProviderFromConfig(configStore, apiKeyStore),
     ),
     vscode.commands.registerCommand(
-      'unifyChatProvider.addProviderFromWellKnownList',
+      'unifyChatProvider.addProviderFromWellKnownProviderList',
       () => addProviderFromWellKnownList(configStore, apiKeyStore),
     ),
-    vscode.commands.registerCommand('unifyChatProvider.importProviders', () =>
-      importProviders(configStore, apiKeyStore),
+    vscode.commands.registerCommand(
+      'unifyChatProvider.importConfigFromOtherApplications',
+      () => importProviders(configStore, apiKeyStore),
     ),
-    vscode.commands.registerCommand('unifyChatProvider.exportAllProviders', () =>
+    vscode.commands.registerCommand('unifyChatProvider.exportConfig', () =>
       exportAllProviders(configStore, apiKeyStore),
     ),
     vscode.commands.registerCommand('unifyChatProvider.manageProviders', () =>
       manageProviders(configStore, apiKeyStore),
     ),
     vscode.commands.registerCommand(
-      'unifyChatProvider.refreshOfficialModels',
+      'unifyChatProvider.refreshAllProvidersOfficialModels',
       async () => {
         const providers = configStore.endpoints;
         const enabledCount = providers.filter(

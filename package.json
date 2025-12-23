@@ -107,19 +107,19 @@
         "title": "Unify Chat Provider: Remove Provider"
       },
       {
-        "command": "unifyChatProvider.addProviderFromConfig",
+        "command": "unifyChatProvider.importConfig",
         "title": "Unify Chat Provider: Import Config"
       },
       {
-        "command": "unifyChatProvider.addProviderFromWellKnownList",
+        "command": "unifyChatProvider.addProviderFromWellKnownProviderList",
         "title": "Unify Chat Provider: Add Provider From Well-Known Provider List"
       },
       {
-        "command": "unifyChatProvider.importProviders",
+        "command": "unifyChatProvider.importConfigFromOtherApplications",
         "title": "Unify Chat Provider: Import Config From Other Applications"
       },
       {
-        "command": "unifyChatProvider.exportAllProviders",
+        "command": "unifyChatProvider.exportConfig",
         "title": "Unify Chat Provider: Export Config"
       },
       {
@@ -127,7 +127,7 @@
         "title": "Unify Chat Provider: Manage Providers"
       },
       {
-        "command": "unifyChatProvider.refreshOfficialModels",
+        "command": "unifyChatProvider.refreshAllProvidersOfficialModels",
         "title": "Unify Chat Provider: Refresh All Provider's Official Models"
       }
     ],
