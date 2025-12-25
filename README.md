@@ -25,10 +25,10 @@ Integrate multiple LLM API providers into VS Code's Github Copilot Chat using th
 
 ## Features
 
-- **[Perfect Compatibility]()**: Supports all mainstream LLM API formats (OpenAI Chat Completion, OpenAI Responses, Anthropic Messages, Ollama Chat).
+- **[Perfect Compatibility]()**: Supports all major LLM API formats (OpenAI Chat Completion, OpenAI Responses, Anthropic Messages, Ollama Chat).
 - **[Best Performance]()**: Extremely focused on special optimizations and best practices for model providers, ensuring 100% model performance.
-- **[Out of the Box]()**: Built-in recommended parameters for mainstream providers and models, and supports automatic synchronization of provider model lists via API, without any tedious configuration.
-- **[Fast Migration](#one-click-migration)**: Comprehensive configuration import/export functions, and supports one-click migration of configurations from mainstream applications or extensions (Claude Code, CodeX, Gemini CLI...).
+- **[Out of the Box]()**: Built-in recommended parameters for major providers and models, and supports automatic synchronization of provider model lists via API, without any tedious configuration.
+- **[Quick Migration](#one-click-migration)**: Complete configuration import/export functions, and supports one-click migration of configurations from major applications or extensions (Claude Code, CodeX, Gemini CLI...).
 - **[Controllable Parameters]()**: Open adjustment of all interface parameters, and supports custom Header and Request fields.
 - **[Excellent Experience]()**: Built-in visual user interface, supports unlimited provider and model configurations, and supports coexistence of multiple configurations for the same provider or model.
 
@@ -39,29 +39,29 @@ Integrate multiple LLM API providers into VS Code's Github Copilot Chat using th
 
 ## Quick Start
 
-For different scenarios, you can use the following most suitable ways to configure:
+Depending on the scenario, you can choose the most suitable method from the following:
 
 - [One-Click Migration](#one-click-migration): Migrate from other applications or extensions.
 - [One-Click Configuration](#one-click-configuration): Add built-in supported model providers.
-- [Import and Export](#import-and-export): Existing backup configurations or configurations shared by others.
+- [Import and Export](#import-and-export): Configurations backed up or shared by others.
 - [Manual Configuration](#manual-configuration): Add any provider and model completely from scratch.
 
-Regardless of the configuration method used, you can customize any field along the way.
+Regardless of the method used for configuration, you can customize any field before or after the import is complete.
 
 ### Basic Operations
 
-Most of the extension's interfaces are integrated into the VS Code Command Palette. Please understand its basic operation to complete subsequent operations:
+Most of the extension's interfaces are integrated into the VSCode Command Palette. Please understand its basic operation methods to complete subsequent operations:
 
-1. Open VS Code Command Palette:
+1. Open VSCode Command Palette:
    - Open via menu `View` -> `Command Palette...`.
    - Open via shortcut `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (Mac).
-2. Search Command:
-   - Enter keyword `Unify Chat Provider:` or `ucp:` in the command palette to search all commands.
+2. Search Commands:
+   - Enter keyword `Unify Chat Provider:` or `ucp:` in the command palette to search for all commands.
 3. Select Command:
-   - Use mouse click or keyboard up/down arrow keys to select command, press Enter to execute selected command.
+   - Use the mouse click or keyboard up/down arrow keys to select a command, and press Enter to execute the selected command.
 
 <div align="center">
-  <img src="./assets/screenshot-1.png" width="500" />
+  <img src="./assets/screenshot-1.png" width="600" />
 </div>
 
 ### One-Click Migration
@@ -76,24 +76,30 @@ Applications or extensions supported for one-click migration:
 
 #### Steps:
 
-1. Open VS Code Command Palette, search for `Import Config From Other Applications`.
+1. Open VSCode Command Palette, search for `Import Config From Other Applications`.
 
    <div align="center">
-   <img src="assets/screenshot-2.png" width="500" />
+   <img src="assets/screenshot-2.png" width="600" />
    </div>
 
    - The interface displays all supported applications or extensions and their detected configuration file paths.
-   - Perform other operations via the button group on the far right of the list item:
+   - Other operations can be performed via the button group on the far right of the list item:
      1. `Custom Path`: Select a custom configuration file path to import.
      2. `Import from Config Content`: Directly input configuration content to import.
 
-2. Select the application or extension configuration you want to import from the popup list.
-3. After selection, you will enter the configuration import interface, which is similar to the [Provider Configuration]() interface. You can view or edit any field.
-4. Click the `Save` button to complete the import. You can immediately use the models in Copilot Chat.
+2. Select the application or extension configuration you want to import from the popped-up list.
+3. After selection, you will enter the configuration import interface, which is similar to the [Provider Configuration]() interface, where you can view or edit any fields.
+4. Click the `Save` button to complete the import, and you can immediately use the models in Copilot Chat.
 
    <div align="center">
-   <img src="assets/screenshot-3.png" width="500" />
+   <img src="assets/screenshot-3.png" width="600" />
    </div>
+
+> **Note**: The following applications only support migration when using custom Base URL and API Key:
+>
+> - Claude Code
+> - Codex
+> - Gemini CLI
 
 ### One-Click Configuration
 
@@ -119,29 +125,29 @@ Model providers supported for one-click configuration:
 
 #### Steps:
 
-1. Open VS Code Command Palette, search for `Add Provider From Well-Known Provider List`.
+1. Open VSCode Command Palette, search for `Add Provider From Well-Known Provider List`.
 
    <div align="center">
-   <img src="assets/screenshot-4.png" width="500" />
+   <img src="assets/screenshot-4.png" width="600" />
    </div>
 
-2. Select the provider you want to add from the popup list.
-3. Enter the API Key as prompted, press Enter to enter the configuration import interface, which is similar to the [Provider Configuration]() interface. You can view or edit any field.
+2. Select the provider you want to add from the popped-up list.
+3. Enter the API Key according to the prompt, and press Enter to enter the configuration import interface, which is similar to the [Provider Configuration]() interface, where you can view or edit any fields.
    - Some providers may not require an API Key, just press Enter to skip.
-4. Click the `Save` button to complete the import. You can immediately use the models in Copilot Chat.
+4. Click the `Save` button to complete the import, and you can immediately use the models in Copilot Chat.
 
    <div align="center">
-   <img src="assets/screenshot-5.png" width="500" />
+   <img src="assets/screenshot-5.png" width="600" />
    </div>
 
 ### Manual Configuration
 
-1. Open VS Code Command Palette, search for `Add Provider`.
+1. Open VSCode Command Palette, search for `Add Provider`.
    <div align="center">
-   <img src="assets/screenshot-6.png" width="500" />
+   <img src="assets/screenshot-6.png" width="600" />
    </div>
-2. Fill in the configuration in the add configuration interface, which is similar to the [Provider Configuration]() interface. You can read the documentation of that interface to understand the function of each field.
-3. Click the `Save` button to complete the addition. You can immediately use the models in Copilot Chat.
+2. Fill in the configuration in the add configuration interface, which is similar to the [Provider Configuration]() interface. You can read the documentation of this interface to understand the function of each field.
+3. Click the `Save` button to complete the addition, and you can immediately use the models in Copilot Chat.
 
 ## Out of the Box Support
 

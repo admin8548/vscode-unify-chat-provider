@@ -39,14 +39,14 @@ Unify Chat Provider
 
 ## 快速开始
 
-针对不同场景，可采用以下几种最适合的方式进行配置：
+针对不同场景，可从以下几种方式中挑选最适合的一种进行：
 
 - [一键迁移](#一键迁移)：从其它应用或扩展迁移。
 - [一键配置](#一键配置)：添加内置支持的模型提供商。
 - [导入与导出](#导入与导出)：已有备份的配置或他人分享的配置。
 - [手动配置](#手动配置)：完全从零开始添加任何提供商与模型。
 
-无论使用哪种方式进行配置，在途中都能够对任何字段进行自定义。
+无论使用哪种方式进行配置，在导入完成前后都能够对任何字段进行自定义。
 
 ### 基本操作
 
@@ -61,7 +61,7 @@ Unify Chat Provider
    - 使用鼠标点击或键盘的上下箭头键选择命令，按回车键执行所选命令。
 
 <div align="center">
-  <img src="./assets/screenshot-1.png" width="500" />
+  <img src="./assets/screenshot-1.png" width="600" />
 </div>
 
 ### 一键迁移
@@ -79,7 +79,7 @@ Unify Chat Provider
 1. 打开 VSCode 命令面板，搜索 `Import Config From Other Applications`。
 
    <div align="center">
-   <img src="assets/screenshot-2.png" width="500" />
+   <img src="assets/screenshot-2.png" width="600" />
    </div>
 
    - 界面展示所有支持的应用或扩展，及其检测到的配置文件路径。
@@ -92,8 +92,14 @@ Unify Chat Provider
 4. 点击 `Save` 按钮即完成导入，你可以立即在 Copilot Chat 中使用其中的模型。
 
    <div align="center">
-   <img src="assets/screenshot-3.png" width="500" />
+   <img src="assets/screenshot-3.png" width="600" />
    </div>
+
+> **注意**：以下应用仅在使用自定义 Base URL 和 API Key 时支持迁移：
+>
+> - Claude Code
+> - Codex
+> - Gemini CLI
 
 ### 一键配置
 
@@ -122,7 +128,7 @@ Unify Chat Provider
 1. 打开 VSCode 命令面板，搜索 `Add Provider From Well-Known Provider List`。
 
    <div align="center">
-   <img src="assets/screenshot-4.png" width="500" />
+   <img src="assets/screenshot-4.png" width="600" />
    </div>
 
 2. 在弹出的列表中选择你想要添加的供应商。
@@ -131,14 +137,14 @@ Unify Chat Provider
 4. 点击 `Save` 按钮即完成导入，你可以立即在 Copilot Chat 中使用其中的模型。
 
    <div align="center">
-   <img src="assets/screenshot-5.png" width="500" />
+   <img src="assets/screenshot-5.png" width="600" />
    </div>
 
 ### 手动配置
 
 1. 打开 VSCode 命令面板，搜索 `Add Provider`。
    <div align="center">
-   <img src="assets/screenshot-6.png" width="500" />
+   <img src="assets/screenshot-6.png" width="600" />
    </div>
 2. 在添加配置界面填写配置，该界面与 [供应商配置]() 界面相似，你可以阅读该界面的文档了解每个字段的作用。
 3. 点击 `Save` 按钮即完成添加，你可以立即在 Copilot Chat 中使用其中的模型。
