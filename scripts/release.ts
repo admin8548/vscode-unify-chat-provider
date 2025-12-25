@@ -178,7 +178,6 @@ try {
       '--packagePath',
       vsixPath,
       '--allow-all-proposed-apis',
-      '--no-rewrite-relative-links',
     ]);
   }
 
