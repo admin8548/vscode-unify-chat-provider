@@ -1,5 +1,5 @@
 <p align="center">
-<img src="./icon.png" style="width:100px;" />
+<img src="icon.png" width="120" />
 </p>
 
 <h1 align="center">
@@ -61,7 +61,7 @@ Unify Chat Provider
    - 使用鼠标点击或键盘的上下箭头键选择命令，按回车键执行所选命令。
 
 <div align="center">
-  <img src="./assets/screenshot-1.png" width="600" />
+  <img src="assets/screenshot-1.png" width="600" />
 </div>
 
 ### 一键迁移

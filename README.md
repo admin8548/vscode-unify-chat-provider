@@ -1,5 +1,5 @@
 <p align="center">
-<img src="./icon.png" style="width:100px;" />
+<img src="icon.png" width="120" />
 </p>
 
 <h1 align="center">
@@ -61,7 +61,7 @@ Most of the extension's interfaces are integrated into the VSCode Command Palett
    - Use the mouse click or keyboard up/down arrow keys to select a command, and press Enter to execute the selected command.
 
 <div align="center">
-  <img src="./assets/screenshot-1.png" width="600" />
+  <img src="assets/screenshot-1.png" width="600" />
 </div>
 
 ### One-Click Migration
