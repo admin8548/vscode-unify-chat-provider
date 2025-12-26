@@ -1,6 +1,5 @@
 .vscode/**
 .claude/**
-node_modules/**
 src/**
 test/**
 out-tests/**
