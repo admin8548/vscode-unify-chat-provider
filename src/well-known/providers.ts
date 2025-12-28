@@ -18,6 +18,8 @@ export const WELL_KNOWN_PROVIDERS: ProviderConfig[] = [
       'gpt-5.2-pro',
       'gpt-5-nano',
       'gpt-4.1',
+      'gpt-oss-120b',
+      'gpt-oss-20b',
     ),
   },
   {
@@ -45,6 +47,12 @@ export const WELL_KNOWN_PROVIDERS: ProviderConfig[] = [
     name: 'Hugging Face (Inference Providers)',
     type: 'openai-chat-completion',
     baseUrl: 'https://router.huggingface.co/v1',
+    models: [],
+  },
+  {
+    name: 'OpenRouter',
+    type: 'openai-chat-completion',
+    baseUrl: 'https://openrouter.ai/api/v1',
     models: [],
   },
   {
@@ -86,6 +94,12 @@ export const WELL_KNOWN_PROVIDERS: ProviderConfig[] = [
       'doubao-seed-1-6-flash-250828',
       'doubao-seed-1-6-vision-250815',
     ),
+  },
+  {
+    name: 'Volcano Engine (Coding Plan)',
+    type: 'openai-responses',
+    baseUrl: 'https://ark.cn-beijing.volces.com/api/coding/v3',
+    models: wellKnowns('doubao-seed-code-preview-latest', 'ark-code-latest'),
   },
   {
     name: 'Byte Plus',
