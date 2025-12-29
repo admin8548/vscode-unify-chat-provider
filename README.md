@@ -7,7 +7,7 @@ Unify Chat Provider
 </h1>
 
 <p align="center">
-Integrate multiple LLM API providers into VS Code's Github Copilot Chat using the Language Model API.
+Integrate multiple LLM API providers into VS Code's GitHub Copilot Chat using the Language Model API.
 </p>
 
 <!-- <br>
@@ -35,7 +35,7 @@ Integrate multiple LLM API providers into VS Code's Github Copilot Chat using th
 ## Installation
 
 - Search for [Unify Chat Provider](https://marketplace.visualstudio.com/items?itemName=SmallMain.vscode-unify-chat-provider) in the VS Code Extension Marketplace and install it.
-- Download the latest `.vsix` file from [Github Releases](https://github.com/smallmain/vscode-unify-chat-provider/releases), and install it in VS Code via `Install from VSIX...` or by dragging it to the extensions panel.
+- Download the latest `.vsix` file from [GitHub Releases](https://github.com/smallmain/vscode-unify-chat-provider/releases), and install it in VS Code via `Install from VSIX...` or by dragging it to the extensions panel.
 
 ## Quick Start
 

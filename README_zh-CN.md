@@ -7,7 +7,7 @@ Unify Chat Provider
 </h1>
 
 <p align="center">
-使用 Language Model API，将多个大语言模型 API 提供商集成到 VS Code 的 Github Copilot Chat 中。
+通过 Language Model API，将多个大语言模型 API 提供商集成到 VS Code 的 GitHub Copilot Chat 中。
 </p>
 
 <!-- <br>
@@ -26,16 +26,18 @@ Unify Chat Provider
 ## 特性
 
 - **[完美兼容](#api-格式支持表)**：支持所有主流的 LLM API 格式（OpenAI Chat Completion、OpenAI Responses、Anthropic Messages、Ollama Chat）。
-- **[最佳性能](#供应商支持表)**：极其重视模型供应商的特殊优化与完美实践，确保能够发挥模型 100% 的性能。
-- **[开箱即用](#模型支持表)**：内置主流供应商与模型的推荐参数，且支持通过接口自动同步供应商的模型列表，无需进行任何繁琐的配置。
-- **[快速迁移](#一键迁移)**：拥有完善的配置导入导出功能，且支持从主流应用或扩展（Cladue Code、CodeX、Gemini CLI...）一键迁移配置。
+- **[深度适配](#供应商支持表)**：深度适配各模型供应商的接口特性与最佳实践。
+- **[最佳性能](#模型支持表)**：内置主流模型的推荐参数，确保充分发挥模型的全部潜力。
+- **[开箱即用](#一键配置)**：支持一键配置主流供应商，支持自动同步官方模型列表，无需进行任何繁琐的配置。
+- **[快速迁移](#一键迁移)**：支持从主流应用或扩展（Claude Code、CodeX、Gemini CLI...）一键迁移配置。
+- **[导入导出](#导入与导出)**：拥有完善的导入和导出功能，支持多种方式（Base64、JSON、URL、URI）导入已有配置。
 - **[可控参数](#调整参数)**：开放所有接口参数的调整，并支持自定义 Header 与 Request 字段。
 - **[极佳体验](#管理供应商)**：内置可视化用户界面，支持无限个供应商及模型配置，且支持同个供应商或模型的多个配置共存。
 
 ## 安装
 
 - 在 VS Code 扩展市场搜索 [Unify Chat Provider](https://marketplace.visualstudio.com/items?itemName=SmallMain.vscode-unify-chat-provider) 并安装。
-- 通过 [Github Releases](https://github.com/smallmain/vscode-unify-chat-provider/releases) 下载最新的 `.vsix` 文件，在 VS Code 中通过 `从 VSIX 安装扩展...` 或拖动到扩展面板进行安装。
+- 通过 [GitHub Releases](https://github.com/smallmain/vscode-unify-chat-provider/releases) 下载最新的 `.vsix` 文件，在 VS Code 中通过 `从 VSIX 安装扩展...` 或拖动到扩展面板进行安装。
 
 ## 快速开始
 
@@ -50,7 +52,7 @@ Unify Chat Provider
 
 ### 基本操作
 
-用户界面集成在 VSCode 命令面板以提供更原生的体验，请知晓它的基本操作方式：
+用户界面集成在 VS Code 命令面板以提供更原生的体验，请了解其基本操作方式：
 
 1. 打开面板：
    - 通过菜单 `查看` -> `命令面板...` 打开。
@@ -72,7 +74,7 @@ Unify Chat Provider
 
 #### 操作步骤：
 
-1. 打开 VSCode 命令面板，搜索 `Import Config From Other Applications`。
+1. 打开 VS Code 命令面板，搜索 `Import Config From Other Applications`。
 
    <div align="center">
    <img src="assets/screenshot-2.png" width="600" />
@@ -102,7 +104,7 @@ Unify Chat Provider
 
 #### 操作步骤：
 
-1. 打开 VSCode 命令面板，搜索 `Add Provider From Well-Known Provider List`。
+1. 打开 VS Code 命令面板，搜索 `Add Provider From Well-Known Provider List`。
 
    <div align="center">
    <img src="assets/screenshot-4.png" width="600" />
@@ -133,7 +135,7 @@ Unify Chat Provider
    - API Base URL：接口基础 URL 地址。
    - API Key：通常是通过注册账号后在用户面板获取。
 
-1. 打开 VSCode 命令面板，搜索 `Add Provider`。
+1. 打开 VS Code 命令面板，搜索 `Add Provider`。
 
    <div align="center">
    <img src="assets/screenshot-6.png" width="600" />
@@ -183,7 +185,7 @@ Unify Chat Provider
 
 ### 供应商列表
 
-打开 VSCode 命令面板，搜索 `Manage Providers`。
+打开 VS Code 命令面板，搜索 `Manage Providers`。
 
 <div align="center">
 <img src="assets/screenshot-8.png" width="600" />
@@ -215,9 +217,9 @@ Unify Chat Provider
 
 ## 管理模型
 
-- 每个供应商你都可以创建无限个模型配置。
+- 每个供应商均可创建无限个模型配置。
 - 不同供应商之间允许存在相同的模型 ID。
-- 单个供应商配置中，不允许直接存在多个相同的模型 ID，可以通过 `#xxx` 后缀添加多个配置。
+- 单个供应商配置中，不允许直接存在多个相同的模型 ID，但可通过 `#xxx` 后缀添加多个配置。
 - 例如可以分别添加 ID 为 `glm4.7` 和 `glm4.7#thinking` 的两个模型配置以随时切换是否开启思考。
 - 模型 ID `#xxx` 后缀在实际发送请求时会被自动移除。
 - 虽然模型名称允许重复，但建议使用不同的名称避免混淆使用。
@@ -267,7 +269,7 @@ Unify Chat Provider
 - 自动拉取的模型名称前面会有一个 `互联网` 图标以示区分。
 - 如果自动拉取的模型 ID 与手动配置的模型 ID 冲突，则只展示手动配置的模型。
 - 自动拉取的模型会定期更新，也可以点击 `(click to fetch)` 手动更新。
-- 通过 VSCode 命令 `Refresh All Provider's Official Models` 手动触发所有供应商的自动拉取更新。
+- 通过 VS Code 命令 `Refresh All Provider's Official Models` 手动触发所有供应商的自动拉取更新。
 
 ### 模型配置
 
@@ -345,6 +347,50 @@ Unify Chat Provider
 - Base64-url 编码的 JSON 配置字符串（仅会导出该格式）
 - 纯 JSON 配置字符串
 - 指向 Base64-url 编码或纯 JSON 配置字符串的 URL
+
+## URI 支持
+
+支持响应 VS Code URI 快速导入供应商配置。
+
+例如：
+
+```
+vscode://SmallMain.vscode-unify-chat-provider/import-config?config=<input>
+```
+
+其中 `<input>` 支持格式与 [导入与导出](#导入与导出) 中导入支持的格式相同。
+
+### 覆盖配置字段
+
+你可以添加 `query` 查询参数来覆盖导入配置中的某些字段。
+
+例如：
+
+```
+vscode://SmallMain.vscode-unify-chat-provider/import-config?config=<input>&apiKey=my-api-key
+```
+
+导入时将会覆盖配置中的 `apiKey` 字段再导入。
+
+### 供应商倡议
+
+如果你是某个模型供应商的开发者，可以通过在网站上添加类似如下的链接，方便用户一键将你的模型添加到扩展中：
+
+```
+<a href="vscode://SmallMain.vscode-unify-chat-provider/import-config?config=eyJ0eXBlIjoi...">Add to Unify Chat Provider</a>
+```
+
+## 云同步兼容
+
+扩展配置存储在 `settings.json` 文件中，支持 VS Code 自带的设置云同步功能。
+
+但密钥等敏感信息默认通过 VS Code 的 secrets API 存储，当前还不支持云同步。
+
+所以当配置同步到其它设备后，可能会要求你重新输入密钥。
+
+如果你希望同步密钥等敏感信息，可以在设置中启用 [`storeApiKeyInSettings`](vscode://settings/unifyChatProvider.storeApiKeyInSettings)，这将把密钥存储在 `settings.json` 中。
+
+这可能会导致密钥泄露风险，你需要自行评估风险并决定是否启用该选项。
 
 ## API 格式支持表
 
@@ -452,7 +498,7 @@ Unify Chat Provider
 
 ## 贡献
 
-- 欢迎创建 Issue 来报告 Bug 或请求新功能、适配新供应商或者模型。
+- 欢迎创建 Issue 来报告 Bug、请求新功能或适配新供应商/模型。
 - 欢迎提交 Pull Request 来参与本项目的开发，你可以查看 [路线图](./ROADMAP.md)。
 
 ## 开发
