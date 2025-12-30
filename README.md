@@ -72,7 +72,7 @@ See the [Application Migration Support Table](#application-migration-support-tab
 
 > If your app/extension is not in the list, you can configure it via [One-Click Configuration](#one-click-configuration) or [Manual Configuration](#manual-configuration).
 
-#### Steps:
+**Steps:**
 
 1. Open the VS Code Command Palette and search for `Import Config From Other Applications`.
 
@@ -102,7 +102,7 @@ See the [Provider Support Table](#provider-support-table) for providers supporte
 
 > If your provider is not in the list, you can add it via [Manual Configuration](#manual-configuration).
 
-#### Steps:
+**Steps:**
 
 1. Open the VS Code Command Palette and search for `Add Provider From Well-Known Provider List`.
 

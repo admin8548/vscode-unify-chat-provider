@@ -72,7 +72,7 @@ Unify Chat Provider
 
 > 如果使用的应用或扩展不在上述列表中，则可通过 [一键配置](#一键配置) 或 [手动配置](#手动配置) 来完成配置。
 
-#### 操作步骤：
+**操作步骤：**
 
 1. 打开 VS Code 命令面板，搜索 `Import Config From Other Applications`。
 
@@ -102,7 +102,7 @@ Unify Chat Provider
 
 > 如果使用的供应商不在上述列表中，可通过 [手动配置](#手动配置) 来添加。
 
-#### 操作步骤：
+**操作步骤：**
 
 1. 打开 VS Code 命令面板，搜索 `Add Provider From Well-Known Provider List`。
 
