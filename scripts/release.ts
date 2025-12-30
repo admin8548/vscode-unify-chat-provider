@@ -14,6 +14,9 @@
  *   bun run scripts/release.ts --dry-run
  *   bun run scripts/release.ts --version 1.2.3
  *   bun run scripts/release.ts --bump patch|minor|major
+ *   bun run scripts/release.ts --github-tag v1.2.3
+ *   bun run scripts/release.ts --github-tag v1.2.3 --skip-github-upload
+ *   bun run scripts/release.ts --github-tag v1.2.3 --skip-github-create --github-asset path/to/file.vsix
  *
  * Requirements:
  * - git (clean working tree recommended)
@@ -50,6 +53,9 @@ const { values } = parseArgs({
     'allow-dirty': { type: 'boolean' },
     version: { type: 'string' },
     bump: { type: 'string' },
+    'github-tag': { type: 'string' },
+    'github-asset': { type: 'string' },
+    'github-notes-file': { type: 'string' },
     'skip-publish': { type: 'boolean' },
     'skip-github': { type: 'boolean' },
     'skip-github-create': { type: 'boolean' },
@@ -64,16 +70,32 @@ const allowDirty = values['allow-dirty'] === true;
 const providedVersion =
   typeof values.version === 'string' ? values.version : undefined;
 const providedBump = typeof values.bump === 'string' ? values.bump : undefined;
+const githubTagInput =
+  typeof values['github-tag'] === 'string' ? values['github-tag'] : undefined;
+const githubAssetInput =
+  typeof values['github-asset'] === 'string'
+    ? values['github-asset']
+    : undefined;
+const githubNotesFileInput =
+  typeof values['github-notes-file'] === 'string'
+    ? values['github-notes-file']
+    : undefined;
 const skipPublish = values['skip-publish'] === true;
 const skipGitHub = values['skip-github'] === true;
 const skipGitHubCreate = skipGitHub || values['skip-github-create'] === true;
 const skipGitHubUpload = skipGitHub || values['skip-github-upload'] === true;
 const githubDraft = values.draft === true;
 
-const rl = createInterface({ input: process.stdin, output: process.stdout });
+await main();
 
-try {
-  const repoRoot = process.cwd();
+async function main(): Promise<void> {
+  let rl: ReturnType<typeof createInterface> | null = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  try {
+    const repoRoot = process.cwd();
 
   const pkgPath = join(repoRoot, 'package.json');
   const pkgText = await readTextFile(pkgPath);
@@ -88,6 +110,24 @@ try {
   }
 
   await assertGitRepo(repoRoot);
+
+  if (githubTagInput) {
+    await runGitHubFromTagMode({
+      repoRoot,
+      extensionName,
+      githubTagInput,
+      githubAssetInput,
+      githubNotesFileInput,
+      skipGitHubCreate,
+      skipGitHubUpload,
+      githubDraft,
+      yes,
+      dryRun,
+      rl,
+    });
+    return;
+  }
+
   await assertGitClean(repoRoot, dryRun || allowDirty);
 
   const nextVersion = await resolveNextVersion({
@@ -146,7 +186,7 @@ try {
     );
     if (!proceed) {
       console.log('Aborted.');
-      process.exit(0);
+      return;
     }
   }
 
@@ -156,7 +196,7 @@ try {
 
   if (dryRun) {
     console.log('Dry-run: no files modified and no commands executed.');
-    process.exit(0);
+    return;
   }
 
   await updatePackageJsonVersion(pkgPath, pkgText, nextVersion);
@@ -165,6 +205,9 @@ try {
   const doCommitAndTag = yes
     ? true
     : await confirm(rl, `Create git commit?`, true);
+  rl.close();
+  rl = null;
+
   if (doCommitAndTag) {
     await runInherit(repoRoot, 'git', ['add', 'package.json', 'CHANGELOG.md']);
     await runInherit(repoRoot, 'git', [
@@ -209,7 +252,8 @@ try {
 
   console.log('Done.');
 } finally {
-  rl.close();
+  rl?.close();
+}
 }
 
 async function assertGitRepo(cwd: string): Promise<void> {
@@ -554,6 +598,32 @@ function printSummary(params: {
   console.log('');
 }
 
+function printGitHubFromTagSummary(params: {
+  tagName: string;
+  tagCommit: string;
+  notesSource: string;
+  assetPath: string | null;
+  skipGitHubCreate: boolean;
+  skipGitHubUpload: boolean;
+  dryRun: boolean;
+}): void {
+  console.log('');
+  console.log('GitHub release (from existing tag)');
+  console.log('=================================');
+  console.log(`- Tag:       ${params.tagName}`);
+  console.log(`- Commit:    ${params.tagCommit}`);
+  console.log(`- Notes:     ${params.notesSource}`);
+  console.log(`- Asset:     ${params.assetPath ?? '(none)'}`);
+  console.log(
+    `- GitHub:    ${[
+      params.skipGitHubCreate ? 'create=skip' : 'create=on',
+      params.skipGitHubUpload ? 'upload=skip' : 'upload=on',
+    ].join(', ')}`,
+  );
+  console.log(`- Mode:      ${params.dryRun ? 'dry-run' : 'live'}`);
+  console.log('');
+}
+
 async function updatePackageJsonVersion(
   pkgPath: string,
   originalText: string,
@@ -612,6 +682,149 @@ async function ensureGitTag(cwd: string, tagName: string): Promise<void> {
   await runInherit(cwd, 'git', ['tag', '-a', tagName, '-m', tagName]);
 }
 
+async function runGitHubFromTagMode(params: {
+  repoRoot: string;
+  extensionName: string;
+  githubTagInput: string;
+  githubAssetInput: string | undefined;
+  githubNotesFileInput: string | undefined;
+  skipGitHubCreate: boolean;
+  skipGitHubUpload: boolean;
+  githubDraft: boolean;
+  yes: boolean;
+  dryRun: boolean;
+  rl: ReturnType<typeof createInterface> | null;
+}): Promise<void> {
+  const tagName = normalizeGitTag(params.githubTagInput);
+  const versionFromTag = tagName.startsWith('v') ? tagName.slice(1) : tagName;
+
+  const tagExists = (
+    await runCapture(params.repoRoot, 'git', ['tag', '--list', tagName])
+  ).stdout.trim();
+  if (tagExists !== tagName) {
+    throw new Error(`Git tag not found: ${tagName}`);
+  }
+
+  const tagCommit = (
+    await runCapture(params.repoRoot, 'git', ['rev-parse', `${tagName}^{}`])
+  ).stdout.trim();
+
+  const changelogPath = join(params.repoRoot, 'CHANGELOG.md');
+
+  let notesSource = `CHANGELOG.md (${tagName})`;
+  let notes: string;
+  if (params.githubNotesFileInput) {
+    notesSource = params.githubNotesFileInput;
+    notes = await readTextFile(params.githubNotesFileInput);
+  } else {
+    const changelogText = await readTextFile(changelogPath);
+    const entry = extractChangelogEntryForTag(changelogText, tagName);
+    if (!entry) {
+      throw new Error(
+        `Unable to find ${tagName} entry in ${changelogPath}. Pass --github-notes-file to provide release notes.`,
+      );
+    }
+    notes = changelogToGitHubReleaseNotes(entry);
+  }
+
+  const defaultAssetPath = join(
+    params.repoRoot,
+    `${params.extensionName}-${versionFromTag}.vsix`,
+  );
+  const assetPath = params.githubAssetInput ?? defaultAssetPath;
+  const assetExists = await fileExists(assetPath);
+  const resolvedAssetPath =
+    params.skipGitHubUpload || !assetExists ? null : assetPath;
+
+  if (!params.skipGitHubUpload && !resolvedAssetPath) {
+    throw new Error(
+      `GitHub upload requested but asset not found: ${assetPath}. Pass --skip-github-upload or build/package the VSIX first.`,
+    );
+  }
+
+  printGitHubFromTagSummary({
+    tagName,
+    tagCommit,
+    notesSource,
+    assetPath: resolvedAssetPath,
+    skipGitHubCreate: params.skipGitHubCreate,
+    skipGitHubUpload: params.skipGitHubUpload,
+    dryRun: params.dryRun,
+  });
+
+  if (params.dryRun) {
+    console.log('Dry-run: no commands executed.');
+    return;
+  }
+
+  if (!params.yes && params.rl) {
+    const proceed = await confirm(
+      params.rl,
+      'Continue with GitHub release create/upload?',
+      false,
+    );
+    if (!proceed) {
+      console.log('Aborted.');
+      return;
+    }
+  }
+
+  if (!params.skipGitHubCreate || !params.skipGitHubUpload) {
+    await publishGitHubRelease({
+      repoRoot: params.repoRoot,
+      tagName,
+      title: tagName,
+      notes,
+      targetCommitish: tagCommit,
+      assetPath: resolvedAssetPath ?? assetPath,
+      draft: params.githubDraft,
+      skipCreate: params.skipGitHubCreate,
+      skipUpload: params.skipGitHubUpload,
+    });
+  }
+}
+
+function normalizeGitTag(input: string): string {
+  const trimmed = input.trim();
+  if (trimmed.startsWith('v')) {
+    return trimmed;
+  }
+  const semver = parseSemver(trimmed);
+  if (semver) {
+    return `v${toSemverString(semver)}`;
+  }
+  return trimmed;
+}
+
+function extractChangelogEntryForTag(
+  changelogText: string,
+  tagName: string,
+): string | null {
+  const normalized = changelogText.replace(/\r\n/g, '\n');
+  const lines = normalized.split('\n');
+  const headerPrefix = `## ${tagName} - `;
+
+  let start = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i]?.startsWith(headerPrefix)) {
+      start = i;
+      break;
+    }
+  }
+  if (start === -1) return null;
+
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    if (lines[i]?.startsWith('## v')) {
+      end = i;
+      break;
+    }
+  }
+
+  const entry = lines.slice(start, end).join('\n').trimEnd();
+  return entry ? `${entry}\n` : null;
+}
+
 async function publishGitHubRelease(params: {
   repoRoot: string;
   tagName: string;
@@ -627,43 +840,74 @@ async function publishGitHubRelease(params: {
     return;
   }
 
+  const ghEnv: NodeJS.ProcessEnv = {
+    ...process.env,
+    NO_COLOR: '1',
+    TERM: 'dumb',
+  };
+
   if (await canRun(params.repoRoot, 'gh', ['--version'])) {
     const notesFile = await writeTempNotes(params.notes);
 
     if (!params.skipCreate) {
-      const exists = await ghReleaseExists(params.repoRoot, params.tagName);
-      if (exists) {
-        console.log(`GitHub Release already exists: ${params.tagName}`);
-      } else {
-        const args = [
-          'release',
-          'create',
-          params.tagName,
-          '--title',
-          params.title,
-          '--notes-file',
-          notesFile,
-          '--target',
-          params.targetCommitish,
-        ];
-        if (params.draft) {
-          args.push('--draft');
+      console.log(`Creating GitHub Release: ${params.tagName}`);
+      const args = [
+        'release',
+        'create',
+        params.tagName,
+        '--title',
+        params.title,
+        '--notes-file',
+        notesFile,
+        '--target',
+        params.targetCommitish,
+      ];
+      if (params.draft) {
+        args.push('--draft');
+      }
+
+      const result = await runCaptureWithCode(params.repoRoot, 'gh', args, {
+        env: ghEnv,
+      });
+      if (result.code !== 0) {
+        const combined = `${result.stderr}\n${result.stdout}`.toLowerCase();
+        if (combined.includes('already exists')) {
+          console.log(`GitHub Release already exists: ${params.tagName}`);
+        } else {
+          throw new Error(
+            `gh release create failed (${String(result.code)}): ${result.stderr || result.stdout}`,
+          );
         }
-        await runInherit(params.repoRoot, 'gh', args);
+      } else if (result.stdout.trim() || result.stderr.trim()) {
+        const output = (result.stdout || result.stderr).trimEnd();
+        if (output) {
+          console.log(output);
+        }
       }
     }
 
     if (!params.skipUpload) {
+      console.log(`Uploading release asset: ${basename(params.assetPath)}`);
       await retry(
         3,
         async () => {
-          await runInherit(params.repoRoot, 'gh', [
-            'release',
-            'upload',
-            params.tagName,
-            params.assetPath,
-            '--clobber',
-          ]);
+          const result = await runCaptureWithCode(
+            params.repoRoot,
+            'gh',
+            [
+              'release',
+              'upload',
+              params.tagName,
+              params.assetPath,
+              '--clobber',
+            ],
+            { env: ghEnv },
+          );
+          if (result.code !== 0) {
+            throw new Error(
+              `gh release upload failed (${String(result.code)}): ${result.stderr || result.stdout}`,
+            );
+          }
         },
         (attempt, error) => {
           console.warn(
@@ -748,13 +992,14 @@ async function ghReleaseExists(
   tagName: string,
 ): Promise<boolean> {
   try {
-    await runCapture(repoRoot, 'gh', [
-      'release',
-      'view',
-      tagName,
-      '--json',
-      'url',
-    ]);
+    await runCapture(
+      repoRoot,
+      'gh',
+      ['release', 'view', tagName, '--json', 'url'],
+      {
+        env: { ...process.env, NO_COLOR: '1', TERM: 'dumb' },
+      },
+    );
     return true;
   } catch {
     return false;
@@ -1028,17 +1273,36 @@ async function canRun(
 }
 
 type RunResult = { stdout: string; stderr: string };
+type RunResultWithCode = { code: number | null; stdout: string; stderr: string };
 
 async function runCapture(
   cwd: string,
   command: string,
   args: string[],
+  options?: { env?: NodeJS.ProcessEnv },
 ): Promise<RunResult> {
+  const result = await runCaptureWithCode(cwd, command, args, options);
+  if (result.code === 0) {
+    return { stdout: result.stdout, stderr: result.stderr };
+  }
+  throw new Error(
+    `${command} ${args.join(' ')} failed (${String(result.code)}): ${
+      result.stderr || result.stdout
+    }`,
+  );
+}
+
+async function runCaptureWithCode(
+  cwd: string,
+  command: string,
+  args: string[],
+  options?: { env?: NodeJS.ProcessEnv },
+): Promise<RunResultWithCode> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: process.env,
+      env: options?.env ?? process.env,
     });
 
     let stdout = '';
@@ -1055,17 +1319,7 @@ async function runCapture(
 
     child.on('error', reject);
     child.on('close', (code) => {
-      if (code === 0) {
-        resolve({ stdout, stderr });
-      } else {
-        reject(
-          new Error(
-            `${command} ${args.join(' ')} failed (${code}): ${
-              stderr || stdout
-            }`,
-          ),
-        );
-      }
+      resolve({ code, stdout, stderr });
     });
   });
 }
@@ -1074,15 +1328,32 @@ async function runInherit(
   cwd: string,
   command: string,
   args: string[],
+  options?: { env?: NodeJS.ProcessEnv },
 ): Promise<void> {
   return new Promise((resolve, reject) => {
+    const wasPaused =
+      process.stdin.isTTY && typeof process.stdin.isPaused === 'function'
+        ? process.stdin.isPaused()
+        : false;
+    if (process.stdin.isTTY && !wasPaused) {
+      process.stdin.pause();
+    }
+
     const child = spawn(command, args, {
       cwd,
       stdio: 'inherit',
-      env: process.env,
+      env: options?.env ?? process.env,
     });
-    child.on('error', reject);
+    child.on('error', (error) => {
+      if (process.stdin.isTTY && !wasPaused) {
+        process.stdin.resume();
+      }
+      reject(error);
+    });
     child.on('close', (code) => {
+      if (process.stdin.isTTY && !wasPaused) {
+        process.stdin.resume();
+      }
       if (code === 0) resolve();
       else reject(new Error(`${command} ${args.join(' ')} failed (${code})`));
     });
