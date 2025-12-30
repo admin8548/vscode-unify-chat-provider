@@ -12,3 +12,8 @@
   - CherryStudio
 - FIM/NES support.
 - Automatic configuration update: It is possible to configure a URL (which will be automatically set when importing from the URL) and a switch. Once the switch is turned on, the latest configuration will be fetched periodically.
+- Claude Code client support.
+  - https://platform.claude.com/docs/en/agent-sdk/hooks#callback-outputs
+  - https://platform.claude.com/docs/en/agent-sdk/overview
+  - https://github.com/anthropics/claude-code/issues/3671#issuecomment-3356182926
+- OpenCode (Models, client support)
