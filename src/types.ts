@@ -1,4 +1,4 @@
-import { ProviderType, Mimic } from './client/definitions';
+import { ProviderType } from './client/definitions';
 
 /**
  * Configuration for a single provider endpoint
@@ -14,8 +14,6 @@ export interface ProviderConfig {
   apiKey?: string;
   /** List of available model IDs */
   models: ModelConfig[];
-  /** Mimic behavior */
-  mimic?: Mimic;
   /** Extra headers to include in requests */
   extraHeaders?: Record<string, string>;
   /** Extra body parameters to include in requests */

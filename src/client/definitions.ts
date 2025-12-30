@@ -22,42 +22,36 @@ export const PROVIDER_TYPES: Record<ProviderType, ProviderDefinition> = {
     type: 'anthropic',
     label: 'Anthropic Messages API',
     description: '/v1/messages',
-    supportMimics: ['claude-code'],
     class: AnthropicProvider,
   },
   'google-ai-studio': {
     type: 'google-ai-studio',
     label: 'Google AI Studio (Gemini API)',
     description: '/v1beta/models:generateContent',
-    supportMimics: [],
     class: GoogleAIStudioProvider,
   },
   'google-vertex-ai': {
     type: 'google-vertex-ai',
     label: 'Google Vertex AI',
     description: '/v1beta1/models:generateContent',
-    supportMimics: [],
     class: VertexAIProvider,
   },
   'openai-chat-completion': {
     type: 'openai-chat-completion',
     label: 'OpenAI Chat Completion API',
     description: '/v1/chat/completions',
-    supportMimics: [],
     class: OpenAIChatCompletionProvider,
   },
   'openai-responses': {
     type: 'openai-responses',
     label: 'OpenAI Responses API',
     description: '/v1/responses',
-    supportMimics: [],
     class: OpenAIResponsesProvider,
   },
   ollama: {
     type: 'ollama',
     label: 'Ollama Chat API',
     description: '/api/chat',
-    supportMimics: [],
     class: OllamaProvider,
   },
 };
@@ -66,15 +60,6 @@ export const PROVIDER_TYPES: Record<ProviderType, ProviderDefinition> = {
  * Valid provider types
  */
 export const PROVIDER_KEYS = Object.keys(PROVIDER_TYPES) as ProviderType[];
-
-/**
- * Provider mimic options
- */
-export type Mimic = 'claude-code';
-
-export const MIMIC_LABELS: Record<Mimic, string> = {
-  'claude-code': 'Claude Code',
-};
 
 export enum FeatureId {
   /**

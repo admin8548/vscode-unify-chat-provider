@@ -46,7 +46,6 @@ export interface OfficialModelsDraftInput {
   name?: string;
   baseUrl?: string;
   apiKey?: string;
-  mimic?: ProviderConfig['mimic'];
   extraHeaders?: ProviderConfig['extraHeaders'];
   extraBody?: ProviderConfig['extraBody'];
   timeout?: ProviderConfig['timeout'];
@@ -431,7 +430,6 @@ export class OfficialModelsManager {
       baseUrl,
       apiKey: input.apiKey?.trim() || undefined,
       models: [],
-      mimic: input.mimic,
       extraHeaders: input.extraHeaders,
       extraBody: input.extraBody,
       timeout: input.timeout,

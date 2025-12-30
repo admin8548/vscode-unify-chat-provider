@@ -9,8 +9,6 @@ import { normalizeBaseUrlInput } from './utils';
 import {
   PROVIDER_KEYS,
   ProviderType,
-  PROVIDER_TYPES,
-  Mimic,
 } from './client/definitions';
 import { ProviderConfig, ModelConfig } from './types';
 
@@ -140,24 +138,13 @@ export class ConfigStore {
       ] as const),
     );
 
-    const supportMimics = PROVIDER_TYPES[type].supportMimics;
     provider.apiKey =
       typeof provider.apiKey === 'string' ? provider.apiKey : undefined;
-    provider.mimic = this.isSupportedMimic(provider.mimic, supportMimics)
-      ? provider.mimic
-      : undefined;
 
     provider.extraHeaders = this.normalizeStringRecord(provider.extraHeaders);
     provider.extraBody = this.normalizeObjectRecord(provider.extraBody);
 
     return provider;
-  }
-
-  private isSupportedMimic(
-    raw: unknown,
-    supported: readonly Mimic[],
-  ): raw is Mimic {
-    return typeof raw === 'string' && supported.some((m) => m === raw);
   }
 
   private normalizeObjectRecord(

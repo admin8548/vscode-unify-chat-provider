@@ -296,7 +296,6 @@ Unify Chat Provider
 | API Base URL     | `baseUrl`                 | API 基础地址，例如 `https://api.anthropic.com`。                                    |
 | API Key          | `apiKey`                  | 鉴权用 Key。                                                                        |
 | 模型列表         | `models`                  | 模型配置数组（`ModelConfig[]`）。                                                   |
-| Mimic            | `mimic`                   | 模拟/兼容某些上游行为的选项（不同 `type` 支持的选项不同）。                         |
 | 额外 Headers     | `extraHeaders`            | 会附加到每次请求的 HTTP Header（`Record<string, string>`）。                        |
 | 额外 Body 字段   | `extraBody`               | 会附加到请求 body 的额外字段（`Record<string, unknown>`），用于对齐供应商私有参数。 |
 | 超时配置         | `timeout`                 | HTTP 请求与 SSE 流式的超时配置（毫秒）。                                            |

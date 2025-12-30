@@ -296,7 +296,6 @@ The following fields correspond to `ProviderConfig` (field names used in import/
 | API Base URL               | `baseUrl`                 | API base URL, e.g. `https://api.anthropic.com`.                                                      |
 | API Key                    | `apiKey`                  | Authentication key.                                                                                  |
 | Models                     | `models`                  | Array of model configurations (`ModelConfig[]`).                                                     |
-| Mimic                      | `mimic`                   | Options to emulate/align with upstream behavior (options vary by `type`).                            |
 | Extra Headers              | `extraHeaders`            | HTTP headers appended to every request (`Record<string, string>`).                                   |
 | Extra Body Fields          | `extraBody`               | Extra fields appended to request body (`Record<string, unknown>`), for provider-specific parameters. |
 | Timeout                    | `timeout`                 | Timeout settings for HTTP requests and SSE streaming (milliseconds).                                 |

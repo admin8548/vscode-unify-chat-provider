@@ -7,12 +7,7 @@ import {
   type ProviderFormDraft,
 } from './form-utils';
 import { normalizeBaseUrlInput } from '../utils';
-import {
-  Mimic,
-  MIMIC_LABELS,
-  ProviderType,
-  PROVIDER_TYPES,
-} from '../client/definitions';
+import { ProviderType, PROVIDER_TYPES } from '../client/definitions';
 import {
   ApiKeyStorageStatus,
   isApiKeySecretRef,
@@ -31,20 +26,12 @@ export interface ProviderFieldContext extends FieldContext {
 }
 
 /**
- * Format a mimic label for display.
- */
-export function formatMimicLabel(mimic: Mimic): string {
-  return MIMIC_LABELS[mimic] ?? mimic;
-}
-
-/**
  * Provider form field schema.
  */
 export const providerFormSchema: FormSchema<ProviderFormDraft> = {
   sections: [
     { id: 'primary', label: 'Primary Fields' },
     { id: 'content', label: 'Content Fields' },
-    { id: 'special', label: 'Special Fields' },
     { id: 'others', label: 'Other Fields' },
   ],
   fields: [
@@ -88,15 +75,6 @@ export const providerFormSchema: FormSchema<ProviderFormDraft> = {
         });
         if (picked) {
           draft.type = picked.typeValue;
-          // Reset mimic if it is not supported by the newly selected provider type
-          if (
-            draft.mimic &&
-            !PROVIDER_TYPES[picked.typeValue].supportMimics.includes(
-              draft.mimic,
-            )
-          ) {
-            draft.mimic = undefined;
-          }
         }
       },
       getDescription: (draft) =>
@@ -176,60 +154,6 @@ export const providerFormSchema: FormSchema<ProviderFormDraft> = {
         draft.models.length > 0
           ? draft.models.map((m) => m.name || m.id).join(', ')
           : '(No models configured)',
-    },
-    // Mimic field
-    {
-      key: 'mimic',
-      type: 'custom',
-      label: 'Mimic',
-      icon: 'vr',
-      section: 'special',
-      edit: async (draft) => {
-        if (!draft.type) {
-          vscode.window.showWarningMessage(
-            'Please select an API format before choosing a mimic option.',
-          );
-          return;
-        }
-
-        const supported = PROVIDER_TYPES[draft.type].supportMimics;
-        if (supported.length === 0) {
-          vscode.window.showInformationMessage(
-            'The selected provider type does not have any mimic options.',
-          );
-          draft.mimic = undefined;
-          return;
-        }
-
-        const { pickQuickItem } = await import('./component');
-        const picked = await pickQuickItem<
-          vscode.QuickPickItem & { mimicValue?: Mimic }
-        >({
-          title: 'Mimic Behavior',
-          placeholder: 'Select a mimic option (or None)',
-          items: [
-            {
-              label: 'None',
-              description: "Use the provider's default behavior",
-              picked: !draft.mimic,
-              mimicValue: undefined,
-            },
-            ...supported.map((mimic) => ({
-              label: formatMimicLabel(mimic),
-              description: mimic,
-              picked: draft.mimic === mimic,
-              mimicValue: mimic,
-            })),
-          ],
-        });
-
-        if (picked) {
-          draft.mimic = picked.mimicValue ?? undefined;
-        }
-      },
-      getDescription: (draft) =>
-        draft.mimic ? formatMimicLabel(draft.mimic) : '(optional, none)',
-      getDetail: () => 'Mimic some User-Agent client behavior.',
     },
     // Extra Headers
     {

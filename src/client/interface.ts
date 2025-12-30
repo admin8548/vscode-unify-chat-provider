@@ -6,13 +6,12 @@ import type {
 } from 'vscode';
 import type { ModelConfig, PerformanceTrace, ProviderConfig } from '../types';
 import type { RequestLogger } from '../logger';
-import { ProviderType, Mimic } from './definitions';
+import { ProviderType } from './definitions';
 
 export interface ProviderDefinition {
   type: ProviderType;
   label: string;
   description: string;
-  supportMimics: Mimic[];
   class: new (config: ProviderConfig) => ApiProvider;
 }
 

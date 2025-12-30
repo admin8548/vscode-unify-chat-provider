@@ -13,7 +13,6 @@ function hasProviderIndicators(value: Record<string, unknown>): boolean {
     'baseUrl' in value ||
     'models' in value ||
     'apiKey' in value ||
-    'mimic' in value ||
     'timeout' in value ||
     'autoFetchOfficialModels' in value
   );
@@ -69,4 +68,3 @@ export function buildProviderDraftFromConfig(
   mergePartialProviderConfig(draft, config);
   return draft;
 }
-

@@ -670,7 +670,6 @@ function buildOfficialModelsDraftInput(
     name: draft.name,
     baseUrl: draft.baseUrl,
     apiKey: draft.apiKey,
-    mimic: draft.mimic,
     extraHeaders: draft.extraHeaders,
     extraBody: draft.extraBody,
     timeout: draft.timeout,

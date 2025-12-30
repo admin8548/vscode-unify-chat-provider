@@ -210,13 +210,6 @@
                 "type": "string",
                 "description": "API key for authentication."
               },
-              "mimic": {
-                "type": "string",
-                "description": "Mimic some User-Agent client behavior (leave empty for default).",
-                "enum": [
-                  "claude-code"
-                ]
-              },
               "extraHeaders": {
                 "type": "object",
                 "description": "Extra headers to include in requests. Header values support `${APIKEY}` to reference the provider apiKey.",

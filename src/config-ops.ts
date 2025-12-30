@@ -28,7 +28,6 @@ export const PROVIDER_CONFIG_KEYS = [
   'baseUrl',
   'apiKey',
   'models',
-  'mimic',
   'extraHeaders',
   'extraBody',
   'timeout',

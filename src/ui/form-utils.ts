@@ -8,7 +8,6 @@ import {
 } from '../config-ops';
 import { normalizeBaseUrlInput } from '../utils';
 import { showValidationErrors } from './component';
-import { PROVIDER_TYPES } from '../client/definitions';
 import { ProviderConfig, ModelConfig } from '../types';
 
 /**
@@ -309,17 +308,5 @@ export function validateProviderForm(
     : 'API base URL is required';
   if (urlErr) errors.push(urlErr);
 
-  if (data.mimic !== undefined) {
-    if (!data.type) {
-      errors.push('Select an API Format before choosing a mimic option');
-    } else {
-      const supported = PROVIDER_TYPES[data.type].supportMimics;
-      if (!supported.includes(data.mimic)) {
-        errors.push(
-          'The selected mimic is not supported by this provider type',
-        );
-      }
-    }
-  }
   return errors;
 }
