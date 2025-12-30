@@ -16,10 +16,7 @@ const GEMINI_CLI_DEFAULT_MODEL_IDS: WellKnownModelId[] = [
   'gemini-3-flash-preview',
   'gemini-2.5-pro',
   'gemini-2.5-flash',
-  'gemini-2.5-flash-lite',
-  'gemini-2.0-flash',
-  'gemini-2.0-flash-lite',
-] as const;
+  ] as const;
 
 function getGeminiCliDefaultModels(): ModelConfig[] {
   const models: ModelConfig[] = [];
@@ -222,7 +219,7 @@ function buildGeminiCliProvider(
 
     const provider: Partial<ProviderConfig> = {
       type: 'google-vertex-ai',
-      name: 'Gemini CLI (Vertex AI - Service Account)',
+      name: 'Gemini CLI',
       baseUrl: `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}`,
       apiKey: applicationCredentials,
       models: getGeminiCliDefaultModels(),
@@ -234,7 +231,7 @@ function buildGeminiCliProvider(
   if (googleApiKey) {
     const provider: Partial<ProviderConfig> = {
       type: 'google-vertex-ai',
-      name: 'Gemini CLI (Vertex AI - API Key)',
+      name: 'Gemini CLI',
       baseUrl: 'https://aiplatform.googleapis.com',
       apiKey: googleApiKey,
       models: getGeminiCliDefaultModels(),
