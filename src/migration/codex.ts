@@ -1,3 +1,4 @@
+import { promises as fs } from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as toml from '@iarna/toml';
@@ -68,9 +69,24 @@ function isLikelyOpenAIModelId(modelId: string): boolean {
   return /^(gpt-|o\d|o-|codex)/i.test(modelId);
 }
 
-function buildCodexProviderFromToml(
+async function readAuthJsonApiKey(): Promise<string | undefined> {
+  const home = os.homedir();
+  const codexHome = process.env.CODEX_HOME?.trim() || path.join(home, '.codex');
+  const authJsonPath = path.join(codexHome, 'auth.json');
+
+  try {
+    const content = await fs.readFile(authJsonPath, 'utf-8');
+    const parsed = JSON.parse(content);
+    const apiKey = parsed?.OPENAI_API_KEY;
+    return typeof apiKey === 'string' && apiKey.trim() ? apiKey.trim() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function buildCodexProviderFromToml(
   parsed: Record<string, unknown>,
-): ProviderMigrationCandidate {
+): Promise<ProviderMigrationCandidate> {
   const profileName = getString(parsed['profile']);
   const profiles = getRecord(parsed['profiles']);
   const profile = profileName
@@ -108,13 +124,19 @@ function buildCodexProviderFromToml(
     parseWireApi(providerConfig?.['wire_api']) ??
     (effectiveProviderId === 'openai' ? 'responses' : undefined);
 
+  // Priority order for API key resolution:
+  // 1. Custom env_key from config.toml
+  // 2. OPENAI_API_KEY from auth.json (for openai provider)
+  // 3. OPENAI_API_KEY from environment variable
   const envKey = getString(providerConfig?.['env_key']);
   const apiKeyFromEnvKey = envKey ? getString(process.env[envKey]) : undefined;
+  const apiKeyFromAuthJson =
+    effectiveProviderId === 'openai' ? await readAuthJsonApiKey() : undefined;
   const apiKeyFromOpenAI =
     effectiveProviderId === 'openai'
       ? getString(process.env.OPENAI_API_KEY)
       : undefined;
-  const apiKey = apiKeyFromEnvKey ?? apiKeyFromOpenAI;
+  const apiKey = apiKeyFromEnvKey ?? apiKeyFromAuthJson ?? apiKeyFromOpenAI;
 
   const providerType: ProviderConfig['type'] =
     providerWireApi === 'chat' ? 'openai-chat-completion' : 'openai-responses';
@@ -173,7 +195,7 @@ function buildCodexProviderFromToml(
     throw new Error(
       effectiveProviderId === 'openai'
         ? t(
-            'Missing APIKEY for Codex import: set OPENAI_API_KEY in your environment (Codex uses env vars for keys).',
+            'Missing APIKEY for Codex import: set OPENAI_API_KEY in your environment, run `codex login --with-api-key`, or ensure ~/.codex/auth.json contains your key.',
           )
         : t(
             'Missing APIKEY for Codex import: set [model_providers.{0}].env_key in ~/.codex/config.toml and export that environment variable.',
@@ -243,6 +265,6 @@ export const codexMigrationSource: ProviderMigrationSource = {
       throw new Error(t('Codex config.toml must be a TOML table/object.'));
     }
 
-    return [buildCodexProviderFromToml(parsed)];
+    return [await buildCodexProviderFromToml(parsed)];
   },
 };
