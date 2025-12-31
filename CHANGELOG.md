@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.1.2 - 2025-12-31
+
+### Fixes
+- adjust translation for penalty and temperature (f30147c, SmallMain)
+
 ## v2.1.1 - 2025-12-31
 
 ### Chores
