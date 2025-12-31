@@ -1,5 +1,21 @@
 # Changelog
 
+## v2.1.0 - 2025-12-31
+
+### Features
+- add chinese translations (aa4419b, SmallMain)
+- add i18n support (b29e5a8, SmallMain)
+
+### Fixes
+- update chinese transitions (f670578, SmallMain)
+- gemini cli migration logic (3070510, SmallMain)
+- match the Ollama ID specification. (f703828, SmallMain)
+
+### Chores
+- remove multilingual support note and update README_zh-CN.md (7a3dd19, SmallMain)
+- update docs (ce3da67, SmallMain)
+- add 'oai' keyword to package.json (8c9673e, SmallMain)
+
 ## v2.0.1 - 2025-12-30
 
 ### Chores
