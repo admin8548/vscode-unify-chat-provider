@@ -170,8 +170,72 @@ export function isRetryableStatusCode(status: number): boolean {
 /**
  * Delay execution for a specified number of milliseconds.
  */
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function abortReasonToError(signal: AbortSignal): Error {
+  const reason: unknown = signal.reason;
+  if (reason instanceof Error) {
+    return reason;
+  }
+  if (typeof DOMException !== 'undefined') {
+    return new DOMException(
+      reason === undefined ? 'The operation was aborted.' : String(reason),
+      'AbortError',
+    );
+  }
+  return new Error(
+    reason === undefined ? 'The operation was aborted.' : String(reason),
+  );
+}
+
+function throwIfAborted(signal: AbortSignal | null | undefined): void {
+  if (!signal) {
+    return;
+  }
+  if (signal.aborted) {
+    throw abortReasonToError(signal);
+  }
+}
+
+function delay(
+  ms: number,
+  abortSignal?: AbortSignal | null,
+): Promise<void> {
+  if (ms <= 0) {
+    return Promise.resolve();
+  }
+
+  if (!abortSignal) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  if (abortSignal.aborted) {
+    return Promise.reject(abortReasonToError(abortSignal));
+  }
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const cleanup = (): void => {
+      if (settled) return;
+      settled = true;
+
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
+      abortSignal.removeEventListener('abort', onAbort);
+    };
+
+    const onAbort = (): void => {
+      cleanup();
+      reject(abortReasonToError(abortSignal));
+    };
+
+    abortSignal.addEventListener('abort', onAbort, { once: true });
+    timeoutId = setTimeout(() => {
+      cleanup();
+      resolve();
+    }, ms);
+  });
 }
 
 function escapeRegExp(value: string): string {
@@ -244,10 +308,18 @@ export async function fetchWithRetry(
     const existingSignal = fetchOptions.signal;
 
     // Combine with existing signal if present
+    throwIfAborted(existingSignal);
+
+    let onExistingAbort: (() => void) | undefined;
     if (existingSignal) {
-      existingSignal.addEventListener('abort', () => {
-        timeoutController.abort(existingSignal.reason);
-      });
+      const signal = existingSignal;
+      onExistingAbort = (): void => {
+        timeoutController.abort(signal.reason);
+      };
+      signal.addEventListener('abort', onExistingAbort, { once: true });
+      if (signal.aborted) {
+        timeoutController.abort(signal.reason);
+      }
     }
 
     const timeoutId = setTimeout(() => {
@@ -284,8 +356,8 @@ export async function fetchWithRetry(
         // Log retry attempt (only to logs, not displayed in VSCode)
         logger?.retry(attempt + 1, maxRetries, response.status, delayMs);
 
-        // Wait before retrying
-        await delay(delayMs);
+        // Wait before retrying (abortable by upstream cancellation)
+        await delay(delayMs, existingSignal);
       }
 
       attempt++;
@@ -308,7 +380,7 @@ export async function fetchWithRetry(
           });
 
           logger?.retry(attempt + 1, maxRetries, 0, delayMs);
-          await delay(delayMs);
+          await delay(delayMs, existingSignal);
         }
 
         attempt++;
@@ -317,6 +389,10 @@ export async function fetchWithRetry(
 
       // Other errors (network errors, user abort) should not be retried
       throw error;
+    } finally {
+      if (onExistingAbort && existingSignal) {
+        existingSignal.removeEventListener('abort', onExistingAbort);
+      }
     }
   }
 
@@ -345,57 +421,84 @@ export async function* withIdleTimeout<T>(
 ): AsyncGenerator<T> {
   const iterator = source[Symbol.asyncIterator]();
 
-  const createTimeoutPromise = (): Promise<'timeout'> => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve('timeout'), responseTimeoutMs);
-    });
-  };
+  type RaceResult =
+    | { kind: 'value'; result: IteratorResult<T> }
+    | { kind: 'timeout' }
+    | { kind: 'abort' };
 
-  const createAbortPromise = (): Promise<'abort'> => {
-    if (!abortSignal) {
-      return new Promise(() => {}); // Never resolves
-    }
-    return new Promise((resolve) => {
-      if (abortSignal.aborted) {
-        resolve('abort');
-      } else {
-        abortSignal.addEventListener('abort', () => resolve('abort'), {
-          once: true,
-        });
+  let onAbort: (() => void) | undefined;
+  const abortRace: Promise<RaceResult> | undefined = abortSignal
+    ? new Promise((resolve) => {
+        const signal = abortSignal;
+        if (signal.aborted) {
+          resolve({ kind: 'abort' });
+          return;
+        }
+        onAbort = (): void => resolve({ kind: 'abort' });
+        signal.addEventListener('abort', onAbort);
+      })
+    : undefined;
+
+  try {
+    while (true) {
+      throwIfAborted(abortSignal);
+
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+      const timeoutRace: Promise<RaceResult> = new Promise((resolve) => {
+        timeoutId = setTimeout(
+          () => resolve({ kind: 'timeout' }),
+          responseTimeoutMs,
+        );
+      });
+
+      try {
+        const races: Array<Promise<RaceResult>> = [
+          iterator
+            .next()
+            .then((r): RaceResult => ({ kind: 'value', result: r })),
+          timeoutRace,
+        ];
+        if (abortRace) {
+          races.push(abortRace);
+        }
+
+        const result = await Promise.race(races);
+
+        if (result.kind === 'abort') {
+          if (abortSignal) {
+            throw abortReasonToError(abortSignal);
+          }
+          throw new Error('Aborted');
+        }
+
+        if (result.kind === 'timeout') {
+          throw new Error(
+            t('Response timeout: No data received for {0}ms', responseTimeoutMs),
+          );
+        }
+
+        // Normal iteration result
+        const iterResult = result.result;
+        if (iterResult.done) {
+          return;
+        }
+
+        yield iterResult.value;
+      } finally {
+        if (timeoutId !== undefined) {
+          clearTimeout(timeoutId);
+        }
       }
-    });
-  };
-
-  while (true) {
-    // Check if already aborted
-    if (abortSignal?.aborted) {
-      throw abortSignal.reason ?? new Error('Aborted');
     }
-
-    // Race between next value, timeout, and abort
-    const result = await Promise.race([
-      iterator.next().then((r) => ({ kind: 'value' as const, result: r })),
-      createTimeoutPromise().then(() => ({ kind: 'timeout' as const })),
-      createAbortPromise().then(() => ({ kind: 'abort' as const })),
-    ]);
-
-    if (result.kind === 'abort') {
-      throw abortSignal?.reason ?? new Error('Aborted');
+  } finally {
+    if (abortSignal && onAbort) {
+      abortSignal.removeEventListener('abort', onAbort);
     }
-
-    if (result.kind === 'timeout') {
-      throw new Error(
-        t('Response timeout: No data received for {0}ms', responseTimeoutMs),
-      );
+    try {
+      await iterator.return?.();
+    } catch {
+      // ignore
     }
-
-    // Normal iteration result
-    const iterResult = result.result;
-    if (iterResult.done) {
-      return;
-    }
-
-    yield iterResult.value;
   }
 }
 

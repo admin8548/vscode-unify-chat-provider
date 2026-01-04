@@ -629,6 +629,11 @@ export class GoogleAIStudioProvider implements ApiProvider {
     const cancellationListener = token.onCancellationRequested(() => {
       abortController.abort();
     });
+    if (token.isCancellationRequested) {
+      abortController.abort();
+      cancellationListener.dispose();
+      return;
+    }
 
     const useThinkingLevel = isFeatureSupported(
       FeatureId.GeminiUseThinkingLevel,

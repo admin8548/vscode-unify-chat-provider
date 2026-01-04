@@ -449,6 +449,12 @@ export class OllamaProvider implements ApiProvider {
         client.abort();
       }
     });
+    if (token.isCancellationRequested) {
+      abortController.abort();
+      client.abort();
+      cancellationListener.dispose();
+      return;
+    }
 
     const convertedMessages = this.convertMessages(encodedModelId, messages);
     const tools = this.convertTools(options.tools);

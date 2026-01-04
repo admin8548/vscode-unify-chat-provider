@@ -404,6 +404,11 @@ export class OpenAIResponsesProvider implements ApiProvider {
     const cancellationListener = token.onCancellationRequested(() => {
       abortController.abort();
     });
+    if (token.isCancellationRequested) {
+      abortController.abort();
+      cancellationListener.dispose();
+      return;
+    }
 
     const convertedMessages = this.convertMessages(encodedModelId, messages);
     const tools = this.convertTools(options.tools);

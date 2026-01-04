@@ -607,6 +607,11 @@ export class AnthropicProvider implements ApiProvider {
     const cancellationListener = token.onCancellationRequested(() => {
       abortController.abort();
     });
+    if (token.isCancellationRequested) {
+      abortController.abort();
+      cancellationListener.dispose();
+      return;
+    }
 
     const thinkingType = model.thinking?.type;
     const thinkingEnabled =
