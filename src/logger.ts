@@ -332,44 +332,54 @@ export class RequestLogger implements ProviderHttpLogger {
   usage(usage: BetaUsage | CompletionUsage | ResponseUsage): void {
     this.ch.info(`[${this.requestId}] Usage: ${JSON.stringify(usage)}`);
 
-    if ('cache_read_input_tokens' in usage) {
-      const cacheRead = usage.cache_read_input_tokens ?? 0;
-      const cacheCreation = usage.cache_creation_input_tokens ?? 0;
-      const uncachedInputTokens = usage.input_tokens;
-      const totalInput = cacheRead + cacheCreation + uncachedInputTokens;
-      const cacheHitRatio =
-        totalInput > 0 ? ((cacheRead / totalInput) * 100).toFixed(1) : '0.0';
-      this.ch.info(
-        `[${this.requestId}] Cache: ${cacheRead} read, ${cacheCreation} created, ${uncachedInputTokens} uncached (${cacheHitRatio}% hit ratio)`,
-      );
-      return;
-    } else if ('input_tokens_details' in usage) {
-      const cachedTokens = usage.input_tokens_details.cached_tokens ?? 0;
-      const inputTokens = usage.input_tokens;
-      const uncachedTokens = Math.max(inputTokens - cachedTokens, 0);
-      const cacheHitRatio =
-        inputTokens > 0
-          ? ((cachedTokens / inputTokens) * 100).toFixed(1)
-          : '0.0';
+    try {
+      if ('cache_read_input_tokens' in usage) {
+        const cacheRead = usage.cache_read_input_tokens ?? 0;
+        const cacheCreation = usage.cache_creation_input_tokens ?? 0;
+        const uncachedInputTokens = usage.input_tokens;
+        const totalInput = cacheRead + cacheCreation + uncachedInputTokens;
+        const cacheHitRatio =
+          totalInput > 0 ? ((cacheRead / totalInput) * 100).toFixed(1) : '0.0';
+        this.ch.info(
+          `[${this.requestId}] Cache: ${cacheRead} read, ${cacheCreation} created, ${uncachedInputTokens} uncached (${cacheHitRatio}% hit ratio)`,
+        );
+        return;
+      } else if ('input_tokens_details' in usage) {
+        const cachedTokens = usage.input_tokens_details.cached_tokens ?? 0;
+        const inputTokens = usage.input_tokens;
+        const uncachedTokens = Math.max(inputTokens - cachedTokens, 0);
+        const cacheHitRatio =
+          inputTokens > 0
+            ? ((cachedTokens / inputTokens) * 100).toFixed(1)
+            : '0.0';
 
-      this.ch.info(
-        `[${this.requestId}] Cache: ${cachedTokens} cached, ${uncachedTokens} uncached (${cacheHitRatio}% hit ratio)`,
-      );
-      return;
-    } else if ('total_tokens' in usage) {
-      const cachedTokens = usage.prompt_tokens_details?.cached_tokens ?? 0;
-      const promptTokens = usage.prompt_tokens;
-      const uncachedTokens = Math.max(promptTokens - cachedTokens, 0);
-      const cacheHitRatio =
-        promptTokens > 0
-          ? ((cachedTokens / promptTokens) * 100).toFixed(1)
-          : '0.0';
+        this.ch.info(
+          `[${this.requestId}] Cache: ${cachedTokens} cached, ${uncachedTokens} uncached (${cacheHitRatio}% hit ratio)`,
+        );
+        return;
+      } else if ('total_tokens' in usage) {
+        const cachedTokens = usage.prompt_tokens_details?.cached_tokens ?? 0;
+        const promptTokens = usage.prompt_tokens;
+        const uncachedTokens = Math.max(promptTokens - cachedTokens, 0);
+        const cacheHitRatio =
+          promptTokens > 0
+            ? ((cachedTokens / promptTokens) * 100).toFixed(1)
+            : '0.0';
 
+        this.ch.info(
+          `[${this.requestId}] Cache: ${cachedTokens} cached, ${uncachedTokens} uncached (${cacheHitRatio}% hit ratio)`,
+        );
+      } else {
+        this.ch.info(
+          `[${this.requestId}] Cache: No cache usage data available.`,
+        );
+      }
+    } catch (error) {
       this.ch.info(
-        `[${this.requestId}] Cache: ${cachedTokens} cached, ${uncachedTokens} uncached (${cacheHitRatio}% hit ratio)`,
+        `[${this.requestId}] Cache: Failed to parse cache usage data: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       );
-    } else {
-      this.ch.info(`[${this.requestId}] Cache: No cache usage data available.`);
     }
   }
 
