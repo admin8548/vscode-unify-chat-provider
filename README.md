@@ -541,6 +541,7 @@ The applications listed below support [One-Click Migration](#one-click-migration
 - Build: `npm run compile`
 - Watch: `npm run watch`
 - Interactive release: `npm run release`
+- GitHub Actions release: `Actions → Release (VS Code Extension) → Run workflow`
 
 ## License
 

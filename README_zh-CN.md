@@ -541,6 +541,7 @@ Google Cloud Vertex AI 共有三种身份验证方式：
 - Build: `npm run compile`
 - Watch: `npm run watch`
 - Interactive release: `npm run release`
+- GitHub Actions 发布：`Actions → Release (VS Code Extension) → Run workflow`
 
 ## 许可证
 
