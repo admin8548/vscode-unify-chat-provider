@@ -1,5 +1,4 @@
 import type { AuthConfig, AuthMethod } from '../auth/types';
-import { t } from '../i18n';
 
 export type WellKnownAuthPreset = {
   id: string;
