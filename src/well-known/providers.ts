@@ -96,6 +96,12 @@ export const WELL_KNOWN_PROVIDERS: ProviderConfig[] = [
     ),
   },
   {
+    name: 'Alibaba Cloud Model Studio (Coding Plan)',
+    type: 'anthropic',
+    baseUrl: 'https://coding.dashscope.aliyuncs.com/apps/anthropic',
+    models: wellKnowns('qwen3-coder-plus'),
+  },
+  {
     name: 'Alibaba Cloud Model Studio (International)',
     type: 'openai-chat-completion',
     baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
