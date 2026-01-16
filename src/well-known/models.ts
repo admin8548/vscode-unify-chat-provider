@@ -199,7 +199,7 @@ const _WELL_KNOWN_MODELS = [
   },
   {
     id: 'claude-sonnet-4-5',
-    alternativeIds: ['claude-sonnet-4.5'],
+    alternativeIds: ['claude-sonnet-4.5', 'claude-sonnet-4-5-thinking'],
     name: 'Claude Sonnet 4.5',
     maxInputTokens: 200000,
     maxOutputTokens: 64000,
@@ -227,7 +227,7 @@ const _WELL_KNOWN_MODELS = [
   },
   {
     id: 'claude-opus-4-5',
-    alternativeIds: ['claude-opus-4.5'],
+    alternativeIds: ['claude-opus-4.5', 'claude-opus-4-5-thinking'],
     name: 'Claude Opus 4.5',
     maxInputTokens: 200000,
     maxOutputTokens: 64000,
@@ -2526,7 +2526,7 @@ const _WELL_KNOWN_MODELS = [
   },
   {
     id: 'gemini-3-pro-preview',
-    alternativeIds: ['gemini-3-pro'],
+    alternativeIds: ['gemini-3-pro', 'gemini-3-pro-high'],
     name: 'Gemini 3 Pro Preview',
     maxInputTokens: 1048576,
     maxOutputTokens: 65536,
@@ -2541,7 +2541,7 @@ const _WELL_KNOWN_MODELS = [
   },
   {
     id: 'gemini-3-flash-preview',
-    alternativeIds: ['gemini-3-flash'],
+    alternativeIds: ['gemini-3-flash', 'gemini-3-flash-preview'],
     name: 'Gemini 3 Flash Preview',
     maxInputTokens: 1048576,
     maxOutputTokens: 65536,

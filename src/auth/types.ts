@@ -1,5 +1,5 @@
 export const NO_AUTH_METHOD = 'none' as const;
-export type AuthMethod = 'none' | 'api-key' | 'oauth2';
+export type AuthMethod = 'none' | 'api-key' | 'oauth2' | 'antigravity-oauth';
 
 export type AuthTokenInfo =
   | { kind: 'none' }
@@ -115,7 +115,22 @@ export interface OAuth2AuthConfig {
   oauth: OAuth2Config;
 }
 
-export type AuthConfig = NoAuthConfig | ApiKeyAuthConfig | OAuth2AuthConfig;
+export interface AntigravityOAuthConfig {
+  method: 'antigravity-oauth';
+  label?: string;
+  description?: string;
+  identityId?: string;
+  token?: string;
+  projectId?: string;
+  tier?: 'free' | 'paid';
+  email?: string;
+}
+
+export type AuthConfig =
+  | NoAuthConfig
+  | ApiKeyAuthConfig
+  | OAuth2AuthConfig
+  | AntigravityOAuthConfig;
 
 /**
  * Resolved authentication credential.

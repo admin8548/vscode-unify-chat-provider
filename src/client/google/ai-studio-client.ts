@@ -116,7 +116,7 @@ export class GoogleAIStudioProvider implements ApiProvider {
     });
   }
 
-  private convertTools(
+  protected convertTools(
     tools: readonly vscode.LanguageModelChatTool[] | undefined,
   ): Tool[] | undefined {
     if (!tools || tools.length === 0) {
@@ -136,7 +136,7 @@ export class GoogleAIStudioProvider implements ApiProvider {
     return [{ functionDeclarations: declarations }];
   }
 
-  private buildFunctionCallingConfig(
+  protected buildFunctionCallingConfig(
     mode: vscode.LanguageModelChatToolMode,
     tools: Tool[] | undefined,
   ): FunctionCallingConfig | undefined {
@@ -229,7 +229,7 @@ export class GoogleAIStudioProvider implements ApiProvider {
     }
   }
 
-  private convertMessages(
+  protected convertMessages(
     encodedModelId: string,
     messages: readonly vscode.LanguageModelChatRequestMessage[],
   ): { systemInstruction?: ContentUnion; contents: Content[] } {
@@ -741,7 +741,7 @@ export class GoogleAIStudioProvider implements ApiProvider {
     }
   }
 
-  private async *parseMessage(
+  protected async *parseMessage(
     message: GenerateContentResponse,
     performanceTrace: PerformanceTrace,
     logger: RequestLogger,
@@ -797,7 +797,7 @@ export class GoogleAIStudioProvider implements ApiProvider {
     }
   }
 
-  private async *parseMessageStream(
+  protected async *parseMessageStream(
     stream: AsyncIterable<GenerateContentResponse>,
     token: vscode.CancellationToken,
     logger: RequestLogger,

@@ -187,6 +187,7 @@
                   "anthropic",
                   "google-ai-studio",
                   "google-vertex-ai",
+                  "google-antigravity",
                   "openai-chat-completion",
                   "openai-responses",
                   "ollama"
@@ -195,6 +196,7 @@
                   "%configuration.endpoints.type.enumDescriptions.0%",
                   "%configuration.endpoints.type.enumDescriptions.1%",
                   "%configuration.endpoints.type.enumDescriptions.2%",
+                  "%configuration.endpoints.type.enumDescriptions.6%",
                   "%configuration.endpoints.type.enumDescriptions.3%",
                   "%configuration.endpoints.type.enumDescriptions.4%",
                   "%configuration.endpoints.type.enumDescriptions.5%"

@@ -2,6 +2,7 @@ import { getBaseModelId } from '../model-id-utils';
 import { t } from '../i18n';
 import { AnthropicProvider } from './anthropic/client';
 import { GoogleAIStudioProvider } from './google/ai-studio-client';
+import { GoogleAntigravityProvider } from './google/antigravity-client';
 import { VertexAIProvider } from './google/vertex-ai-client';
 import { ProviderDefinition } from './interface';
 import { OllamaProvider } from './ollama/client';
@@ -14,6 +15,7 @@ export type ProviderType =
   | 'anthropic'
   | 'google-ai-studio'
   | 'google-vertex-ai'
+  | 'google-antigravity'
   | 'openai-chat-completion'
   | 'openai-responses'
   | 'ollama';
@@ -36,6 +38,12 @@ export const PROVIDER_TYPES: Record<ProviderType, ProviderDefinition> = {
     label: t('Google Vertex AI'),
     description: '/v1beta1/models:generateContent',
     class: VertexAIProvider,
+  },
+  'google-antigravity': {
+    type: 'google-antigravity',
+    label: t('Google Antigravity'),
+    description: '/v1internal:generateContent',
+    class: GoogleAntigravityProvider,
   },
   'openai-chat-completion': {
     type: 'openai-chat-completion',

@@ -2,6 +2,7 @@ import { t } from '../i18n';
 import { SecretStore } from '../secret';
 import type { AuthProvider, AuthProviderContext } from './auth-provider';
 import { ApiKeyAuthProvider } from './providers/api-key';
+import { AntigravityOAuthProvider } from './providers/antigravity-oauth';
 import { OAuth2AuthProvider } from './providers/oauth2';
 import { AuthConfig } from './types';
 
@@ -43,6 +44,12 @@ export const AUTH_METHODS = {
     label: t('OAuth 2.0'),
     description: t('Authenticate using OAuth 2.0'),
     ctor: OAuth2AuthProvider,
+  },
+  'antigravity-oauth': {
+    id: 'antigravity-oauth',
+    label: t('Google (Antigravity)'),
+    description: t('Authenticate using Google OAuth (Antigravity)'),
+    ctor: AntigravityOAuthProvider,
   },
 } as const satisfies Record<string, AuthMethodDefinition>;
 

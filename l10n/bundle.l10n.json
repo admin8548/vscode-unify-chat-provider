@@ -19,6 +19,7 @@
   "Provider \"{0}\" updated.": "Provider \"{0}\" updated.",
   "Provider \"{0}\" added.": "Provider \"{0}\" added.",
   "Provider \"{0}\" API key is missing. Please re-enter it before duplicating.": "Provider \"{0}\" API key is missing. Please re-enter it before duplicating.",
+  "Provider \"{0}\" authentication data is missing. Please re-enter it before duplicating.": "Provider \"{0}\" authentication data is missing. Please re-enter it before duplicating.",
   "Provider duplicated as \"{0}\".": "Provider duplicated as \"{0}\".",
   "Export Provider Configuration": "Export Provider Configuration",
   "Select what to export": "Select what to export",
@@ -506,5 +507,18 @@
   "Yes (Recommended)": "Yes (Recommended)",
   "Your API key": "Your API key",
   "{0} (HTTP {1})": "{0} (HTTP {1})",
-  "{0} (refreshable)": "{0} (refreshable)"
+  "{0} (refreshable)": "{0} (refreshable)",
+  "Authenticate using Google OAuth (Antigravity)": "Authenticate using Google OAuth (Antigravity)",
+  "Authenticate with Google OAuth for Antigravity": "Authenticate with Google OAuth for Antigravity",
+  "Authorization": "Authorization",
+  "Enter Google OAuth client secret for Antigravity": "Enter Google OAuth client secret for Antigravity",
+  "Google (Antigravity)": "Google (Antigravity)",
+  "Google Antigravity": "Google Antigravity",
+  "Invalid URL": "Invalid URL",
+  "Optional: enter project id (leave empty to auto-detect)": "Optional: enter project id (leave empty to auto-detect)",
+  "Paste the redirected URL from the browser address bar": "Paste the redirected URL from the browser address bar",
+  "Project ID (optional)": "Project ID (optional)",
+  "Refresh access token": "Refresh access token",
+  "Refresh token": "Refresh token",
+  "Well-known": "Well-known"
 }

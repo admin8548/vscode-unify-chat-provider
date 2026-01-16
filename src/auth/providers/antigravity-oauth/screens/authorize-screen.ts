@@ -1,0 +1,114 @@
+import * as vscode from 'vscode';
+import { createServer } from 'node:http';
+import { t } from '../../../../i18n';
+import {
+  ANTIGRAVITY_CALLBACK_PORT,
+  ANTIGRAVITY_REDIRECT_PATH,
+} from '../constants';
+
+type CallbackResult =
+  | { type: 'success'; code: string; state: string }
+  | { type: 'error'; error: string };
+
+function parseUrlOrNull(raw: string): URL | null {
+  try {
+    return new URL(raw);
+  } catch {
+    return null;
+  }
+}
+
+function parseCallbackFromUrl(url: URL): CallbackResult {
+  const code = url.searchParams.get('code')?.trim();
+  const state = url.searchParams.get('state')?.trim();
+  const error = url.searchParams.get('error')?.trim();
+  const errorDescription = url.searchParams.get('error_description')?.trim();
+
+  if (error) {
+    return {
+      type: 'error',
+      error: errorDescription ? `${error}: ${errorDescription}` : error,
+    };
+  }
+
+  if (!code || !state) {
+    return { type: 'error', error: 'Missing code or state' };
+  }
+
+  return { type: 'success', code, state };
+}
+
+function renderHtml(text: string): string {
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+  return `<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>Authentication</title></head><body style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:24px;"><h2>${escaped}</h2></body></html>`;
+}
+
+export async function performAntigravityAuthorization(
+  url: string,
+): Promise<CallbackResult | null> {
+  const opened = await vscode.env.openExternal(vscode.Uri.parse(url));
+  if (!opened) {
+    vscode.window.showErrorMessage(t('Failed to open browser for authorization'));
+    return null;
+  }
+
+  const manualFallback = async (): Promise<CallbackResult | null> => {
+    const pasted = await vscode.window.showInputBox({
+      title: t('Authorization'),
+      prompt: t('Paste the redirected URL from the browser address bar'),
+      ignoreFocusOut: true,
+    });
+
+    if (!pasted) {
+      return null;
+    }
+
+    const parsed = parseUrlOrNull(pasted.trim());
+    if (!parsed) {
+      vscode.window.showErrorMessage(t('Invalid URL'));
+      return null;
+    }
+
+    return parseCallbackFromUrl(parsed);
+  };
+
+  return await new Promise<CallbackResult | null>((resolve) => {
+    const server = createServer((req, res) => {
+      const reqUrl = req.url ?? '';
+      const parsed = parseUrlOrNull(`http://localhost${reqUrl}`);
+      if (!parsed || parsed.pathname !== ANTIGRAVITY_REDIRECT_PATH) {
+        res.statusCode = 404;
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.end('Not Found');
+        return;
+      }
+
+      const result = parseCallbackFromUrl(parsed);
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.end(
+        renderHtml(
+          result.type === 'success'
+            ? 'Authentication complete. You may close this tab.'
+            : 'Authentication failed. You may close this tab.',
+        ),
+      );
+
+      server.close(() => {
+        resolve(result);
+      });
+    });
+
+    server.on('error', async () => {
+      server.close();
+      resolve(await manualFallback());
+    });
+
+    server.listen(ANTIGRAVITY_CALLBACK_PORT, 'localhost');
+  });
+}
