@@ -82,6 +82,21 @@ export class SecretStore {
   }
 
   /**
+   * Get API key value using legacy storage format (v2.x).
+   * In v2.x, the secret reference itself was used as the storage key.
+   */
+  async getLegacyApiKey(ref: string): Promise<string | undefined> {
+    return this.secrets.get(ref);
+  }
+
+  /**
+   * Delete API key using legacy storage format (v2.x).
+   */
+  async deleteLegacyApiKey(ref: string): Promise<void> {
+    await this.secrets.delete(ref);
+  }
+
+  /**
    * Get API key storage status from a raw config value.
    * This handles both plain text API keys and secret references.
    */

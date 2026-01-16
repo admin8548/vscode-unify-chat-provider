@@ -17,6 +17,31 @@ function getApiKeyFromAuth(auth: AuthConfig | undefined): string | undefined {
   return typeof apiKey === 'string' ? apiKey : undefined;
 }
 
+/**
+ * Migrate legacy API key storage format (v2.x -> v3.x).
+ * In v2.x, the secret reference itself was used as the storage key.
+ * In v3.x, we use a prefixed format: `ucp:api-key:<uuid>`.
+ */
+async function migrateLegacyApiKeyIfNeeded(
+  secretStore: SecretStore,
+  ref: string,
+): Promise<void> {
+  // Check if new format key already exists
+  const newFormatValue = await secretStore.getApiKey(ref);
+  if (newFormatValue) {
+    return; // Already migrated
+  }
+
+  // Check if old format key exists (ref itself as key)
+  const oldFormatValue = await secretStore.getLegacyApiKey(ref);
+  if (oldFormatValue) {
+    // Copy to new format
+    await secretStore.setApiKey(ref, oldFormatValue);
+    // Delete old format key
+    await secretStore.deleteLegacyApiKey(ref);
+  }
+}
+
 export async function migrateApiKeyToAuth(
   configStore: ConfigStore,
 ): Promise<void> {
@@ -68,6 +93,14 @@ export async function migrateApiKeyStorage(options: {
     const providers = options.configStore.endpoints;
     if (providers.length === 0) {
       return;
+    }
+
+    // Migrate legacy secret storage keys (v2.x -> v3.x)
+    for (const provider of providers) {
+      const apiKey = getApiKeyFromAuth(provider.auth);
+      if (apiKey && isSecretRef(apiKey)) {
+        await migrateLegacyApiKeyIfNeeded(options.secretStore, apiKey);
+      }
     }
 
     let didChange = false;
