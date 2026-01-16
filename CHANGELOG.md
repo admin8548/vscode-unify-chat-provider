@@ -1,5 +1,15 @@
 # Changelog
 
+## v3.2.0 - 2026-01-16
+
+### Features
+- add Nvidia provider and update model alternative IDs (d51774e, SmallMain)
+- implement migration for legacy API key storage format (v2.x -> v3.x) (f34a062, SmallMain)
+- add default capabilities to non well-known model (14bfc8f, SmallMain)
+- add StreamLake Vanchin providers and models to the integration (16d380a, SmallMain)
+- add LongCat provider and models to the integration (3b070b8, SmallMain)
+- add antigravity oauth support (0bea042, SmallMain)
+
 ## v3.1.1 - 2026-01-16
 
 ### Features
