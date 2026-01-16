@@ -300,12 +300,17 @@ export const WELL_KNOWN_PROVIDERS: ProviderConfig[] = [
 
 function wellKnowns(...ids: WellKnownModelId[]): ModelConfig[] {
   const idSet = new Set<string>(ids);
-  return normalizeWellKnownConfigs(
-    WELL_KNOWN_MODELS.filter((m) => {
-      if (idSet.has(m.id)) {
-        return true;
-      }
-      return m.alternativeIds?.some((altId) => idSet.has(altId)) ?? false;
-    }),
-  );
+  const declaredIds = new Map<string, string>();
+  const matched = WELL_KNOWN_MODELS.filter((m) => {
+    if (idSet.has(m.id)) {
+      return true;
+    }
+    const matchedAltId = m.alternativeIds?.find((altId) => idSet.has(altId));
+    if (matchedAltId) {
+      declaredIds.set(m.id, matchedAltId);
+      return true;
+    }
+    return false;
+  });
+  return normalizeWellKnownConfigs(matched, declaredIds);
 }

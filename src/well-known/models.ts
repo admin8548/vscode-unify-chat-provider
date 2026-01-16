@@ -2782,6 +2782,10 @@ export function mergeWithWellKnownModels(
 
 export function normalizeWellKnownConfigs(
   models: readonly WellKnownModelConfig[],
+  declaredIds?: Map<string, string>,
 ): ModelConfig[] {
-  return models.map(({ alternativeIds, ...config }) => config);
+  return models.map(({ alternativeIds, ...config }) => {
+    const declaredId = declaredIds?.get(config.id);
+    return declaredId ? { ...config, id: declaredId } : config;
+  });
 }
