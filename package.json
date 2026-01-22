@@ -188,6 +188,7 @@
                   "google-ai-studio",
                   "google-vertex-ai",
                   "google-antigravity",
+                  "google-gemini-cli",
                   "openai-chat-completion",
                   "openai-responses",
                   "openai-codex",
@@ -199,11 +200,12 @@
                   "%configuration.endpoints.type.enumDescriptions.1%",
                   "%configuration.endpoints.type.enumDescriptions.2%",
                   "%configuration.endpoints.type.enumDescriptions.6%",
+                  "%configuration.endpoints.type.enumDescriptions.8%",
                   "%configuration.endpoints.type.enumDescriptions.3%",
                   "%configuration.endpoints.type.enumDescriptions.4%",
                   "%configuration.endpoints.type.enumDescriptions.7%",
                   "%configuration.endpoints.type.enumDescriptions.5%",
-                  "%configuration.endpoints.type.enumDescriptions.8%"
+                  "%configuration.endpoints.type.enumDescriptions.9%"
                 ]
               },
               "name": {

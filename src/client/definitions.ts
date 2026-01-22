@@ -4,6 +4,7 @@ import { AnthropicProvider } from './anthropic/client';
 import { AnthropicClaudeCodeCloakProvider } from './anthropic/claude-code-cloak-client';
 import { GoogleAIStudioProvider } from './google/ai-studio-client';
 import { GoogleAntigravityProvider } from './google/antigravity-client';
+import { GoogleGeminiCLIProvider } from './google/gemini-cli-client';
 import { VertexAIProvider } from './google/vertex-ai-client';
 import { ProviderDefinition } from './interface';
 import { OllamaProvider } from './ollama/client';
@@ -19,6 +20,7 @@ export type ProviderType =
   | 'google-ai-studio'
   | 'google-vertex-ai'
   | 'google-antigravity'
+  | 'google-gemini-cli'
   | 'openai-chat-completion'
   | 'openai-codex'
   | 'openai-responses'
@@ -54,6 +56,12 @@ export const PROVIDER_TYPES: Record<ProviderType, ProviderDefinition> = {
     label: t('Google Antigravity'),
     description: '/v1internal:generateContent',
     class: GoogleAntigravityProvider,
+  },
+  'google-gemini-cli': {
+    type: 'google-gemini-cli',
+    label: t('Google Gemini CLI'),
+    description: '/v1internal:generateContent',
+    class: GoogleGeminiCLIProvider,
   },
   'openai-chat-completion': {
     type: 'openai-chat-completion',
