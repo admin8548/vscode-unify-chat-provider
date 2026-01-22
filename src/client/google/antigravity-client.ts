@@ -205,15 +205,30 @@ function sleepWithAbortSignal(
 }
 
 function cleanJsonSchemaForAntigravity(schema: unknown): unknown {
-  const rootRecord = isRecord(schema) ? schema : undefined;
-  const rootDefs = (() => {
-    const defs = rootRecord?.['$defs'];
-    return isRecord(defs) ? defs : undefined;
-  })();
-  const rootDefinitions = (() => {
-    const defs = rootRecord?.['definitions'];
-    return isRecord(defs) ? defs : undefined;
-  })();
+  const unsupportedConstraints = new Set<string>([
+    'minLength',
+    'maxLength',
+    'exclusiveMinimum',
+    'exclusiveMaximum',
+    'pattern',
+    'minItems',
+    'maxItems',
+    'format',
+    'default',
+    'examples',
+  ]);
+
+  const droppedKeys = new Set<string>([
+    '$schema',
+    '$id',
+    '$defs',
+    'definitions',
+    '$comment',
+    'title',
+    'readOnly',
+    'writeOnly',
+    'deprecated',
+  ]);
 
   const appendHintToDescription = (
     target: Record<string, unknown>,
@@ -223,12 +238,34 @@ function cleanJsonSchemaForAntigravity(schema: unknown): unknown {
     if (!trimmed) {
       return;
     }
+
     const existing = target['description'];
     if (typeof existing === 'string' && existing.trim()) {
-      target['description'] = `${existing.trim()}\n\n${trimmed}`;
+      target['description'] = `${existing.trim()} (${trimmed})`;
       return;
     }
+
     target['description'] = trimmed;
+  };
+
+  const stringifyEnumValue = (value: unknown): string => {
+    if (value === null) {
+      return 'null';
+    }
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    if (isRecord(value) || Array.isArray(value)) {
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return String(value);
+      }
+    }
+    return String(value);
   };
 
   const mergeRequired = (
@@ -244,15 +281,15 @@ function cleanJsonSchemaForAntigravity(schema: unknown): unknown {
     const merged = new Set<string>();
     if (Array.isArray(baseRequired)) {
       for (const item of baseRequired) {
-        if (typeof item === 'string' && item) {
-          merged.add(item);
+        if (typeof item === 'string' && item.trim().length > 0) {
+          merged.add(item.trim());
         }
       }
     }
     if (Array.isArray(incomingRequired)) {
       for (const item of incomingRequired) {
-        if (typeof item === 'string' && item) {
-          merged.add(item);
+        if (typeof item === 'string' && item.trim().length > 0) {
+          merged.add(item.trim());
         }
       }
     }
@@ -281,28 +318,21 @@ function cleanJsonSchemaForAntigravity(schema: unknown): unknown {
   ): Record<string, unknown> => {
     const merged: Record<string, unknown> = { ...base };
 
+    const incomingDescription = incoming['description'];
+    if (typeof incomingDescription === 'string' && incomingDescription.trim()) {
+      appendHintToDescription(merged, incomingDescription);
+    }
+
+    mergeProperties(merged, incoming);
+    mergeRequired(merged, incoming);
+
     for (const [key, value] of Object.entries(incoming)) {
-      if (key === 'properties') {
-        mergeProperties(merged, incoming);
-        continue;
-      }
-      if (key === 'required') {
-        mergeRequired(merged, incoming);
-        continue;
-      }
-      if (key === 'description') {
-        const existing = merged['description'];
-        if (typeof value === 'string' && value.trim()) {
-          appendHintToDescription(
-            merged,
-            typeof existing === 'string' && existing.trim()
-              ? value
-              : value.trim(),
-          );
-        }
-        continue;
-      }
-      if (key in merged) {
+      if (
+        key === 'description' ||
+        key === 'properties' ||
+        key === 'required' ||
+        key in merged
+      ) {
         continue;
       }
       merged[key] = value;
@@ -311,169 +341,176 @@ function cleanJsonSchemaForAntigravity(schema: unknown): unknown {
     return merged;
   };
 
-  const simplifyUnionSchemas = (
-    unionKey: 'anyOf' | 'oneOf',
-    schemaRecord: Record<string, unknown>,
-    variants: unknown[],
-  ): Record<string, unknown> => {
-    const stripped: Record<string, unknown> = { ...schemaRecord };
-    delete stripped[unionKey];
+  type CleanResult = { value: unknown; nullable: boolean };
 
-    const cleanedVariants = variants
-      .map((item) => clean(item))
-      .filter((item): item is Record<string, unknown> => isRecord(item));
-
-    if (cleanedVariants.length === 0) {
-      appendHintToDescription(
-        stripped,
-        `${unionKey} present but could not be normalized; falling back to generic object schema.`,
-      );
-      return stripped;
-    }
-
-    if (cleanedVariants.length === 1) {
-      return clean(mergeSchemas(stripped, cleanedVariants[0])) as Record<
-        string,
-        unknown
-      >;
-    }
-
-    const merged: Record<string, unknown> = { ...stripped };
-    const mergedProperties: Record<string, unknown> = {};
-    const requiredIntersection = new Set<string>();
-    let requiredInitialized = false;
-
-    for (const variant of cleanedVariants) {
-      const variantProps = variant['properties'];
-      if (isRecord(variantProps)) {
-        for (const [prop, value] of Object.entries(variantProps)) {
-          if (!(prop in mergedProperties)) {
-            mergedProperties[prop] = value;
-          }
-        }
-      }
-
-      const variantRequired = variant['required'];
-      const requiredSet = new Set<string>();
-      if (Array.isArray(variantRequired)) {
-        for (const item of variantRequired) {
-          if (typeof item === 'string' && item) {
-            requiredSet.add(item);
-          }
-        }
-      }
-      if (!requiredInitialized) {
-        for (const item of requiredSet) {
-          requiredIntersection.add(item);
-        }
-        requiredInitialized = true;
-      } else {
-        for (const item of Array.from(requiredIntersection)) {
-          if (!requiredSet.has(item)) {
-            requiredIntersection.delete(item);
-          }
-        }
-      }
-    }
-
-    if (Object.keys(mergedProperties).length > 0) {
-      merged['properties'] = mergedProperties;
-    }
-
-    if (requiredIntersection.size > 0) {
-      merged['required'] = Array.from(requiredIntersection);
-    }
-
-    appendHintToDescription(
-      merged,
-      `${unionKey} simplified for Antigravity tool schema compatibility (${cleanedVariants.length} variants).`,
-    );
-
-    return merged;
-  };
-
-  const clean = (value: unknown): unknown => {
+  const clean = (value: unknown, ctx: { topLevel: boolean }): CleanResult => {
     if (Array.isArray(value)) {
-      return value.map(clean);
+      return {
+        value: value.map((item) => clean(item, { topLevel: false }).value),
+        nullable: false,
+      };
     }
 
     if (!isRecord(value)) {
-      return value;
+      return { value, nullable: false };
     }
 
-    const ref = value['$ref'];
-    if (typeof ref === 'string' && ref.startsWith('#/')) {
-      const [, section, key] = ref.split('/');
-      const store =
-        section === '$defs'
-          ? rootDefs
-          : section === 'definitions'
-            ? rootDefinitions
-            : undefined;
+    const refValue = value['$ref'];
+    if (typeof refValue === 'string' && refValue.trim()) {
+      const idx = refValue.lastIndexOf('/');
+      const defName = idx >= 0 ? refValue.slice(idx + 1) : refValue;
 
-      const resolved = store?.[key];
-      if (resolved !== undefined) {
-        const merged: Record<string, unknown> = { ...value };
-        delete merged['$ref'];
-        const cleanedResolved = clean(resolved);
-        if (isRecord(cleanedResolved)) {
-          return clean({ ...cleanedResolved, ...merged });
-        }
-        return clean(cleanedResolved);
-      }
+      const out: Record<string, unknown> = { type: 'object' };
+      const existingDescription =
+        typeof value['description'] === 'string' ? value['description'] : '';
+      out['description'] = existingDescription.trim()
+        ? `${existingDescription.trim()} (See: ${defName})`
+        : `See: ${defName}`;
+      return { value: out, nullable: false };
     }
 
     const allOf = value['allOf'];
     if (Array.isArray(allOf) && allOf.length > 0) {
       let merged: Record<string, unknown> = { ...value };
       delete merged['allOf'];
+
       for (const item of allOf) {
-        const cleaned = clean(item);
+        const cleaned = clean(item, ctx).value;
         if (isRecord(cleaned)) {
           merged = mergeSchemas(merged, cleaned);
         }
       }
-      return clean(merged);
+
+      return clean(merged, ctx);
     }
 
-    const anyOf = value['anyOf'];
-    if (Array.isArray(anyOf) && anyOf.length > 0) {
-      return clean(simplifyUnionSchemas('anyOf', value, anyOf));
-    }
+    const unionKey: 'anyOf' | 'oneOf' | undefined = (() => {
+      const anyOf = value['anyOf'];
+      if (Array.isArray(anyOf) && anyOf.length > 0) {
+        return 'anyOf';
+      }
+      const oneOf = value['oneOf'];
+      if (Array.isArray(oneOf) && oneOf.length > 0) {
+        return 'oneOf';
+      }
+      return undefined;
+    })();
 
-    const oneOf = value['oneOf'];
-    if (Array.isArray(oneOf) && oneOf.length > 0) {
-      return clean(simplifyUnionSchemas('oneOf', value, oneOf));
+    if (unionKey) {
+      const variantsRaw = value[unionKey];
+      const variants = Array.isArray(variantsRaw) ? variantsRaw : [];
+
+      const cleanedVariants = variants
+        .map((item) => clean(item, { topLevel: false }).value)
+        .filter((item): item is Record<string, unknown> => isRecord(item));
+
+      if (cleanedVariants.length === 0) {
+        const stripped: Record<string, unknown> = { ...value };
+        delete stripped[unionKey];
+        appendHintToDescription(
+          stripped,
+          `${unionKey} present but could not be normalized; falling back to generic object schema`,
+        );
+        return clean(stripped, ctx);
+      }
+
+      let bestIdx = 0;
+      let bestScore = -1;
+      const allTypes: string[] = [];
+
+      for (let i = 0; i < cleanedVariants.length; i++) {
+        const variant = cleanedVariants[i];
+        const rawType = variant['type'];
+        const typeString = typeof rawType === 'string' ? rawType : '';
+
+        const hasProps = isRecord(variant['properties']);
+        const hasItems = variant['items'] !== undefined;
+
+        let score = 0;
+        let kind = typeString;
+        if (typeString === 'object' || hasProps) {
+          score = 3;
+          kind = 'object';
+        } else if (typeString === 'array' || hasItems) {
+          score = 2;
+          kind = 'array';
+        } else if (typeString && typeString !== 'null') {
+          score = 1;
+        } else {
+          kind = kind || 'null';
+        }
+
+        allTypes.push(kind);
+        if (score > bestScore) {
+          bestScore = score;
+          bestIdx = i;
+        }
+      }
+
+      const selected: Record<string, unknown> = { ...cleanedVariants[bestIdx] };
+
+      const parentDescription =
+        typeof value['description'] === 'string' ? value['description'].trim() : '';
+      if (parentDescription) {
+        appendHintToDescription(selected, parentDescription);
+      }
+
+      const distinctTypes: string[] = [];
+      const seenTypes = new Set<string>();
+      for (const t of allTypes) {
+        if (!seenTypes.has(t)) {
+          seenTypes.add(t);
+          distinctTypes.push(t);
+        }
+      }
+      if (distinctTypes.length > 1) {
+        appendHintToDescription(selected, `Accepts: ${distinctTypes.join(' | ')}`);
+      }
+
+      return { value: selected, nullable: false };
     }
 
     const out: Record<string, unknown> = {};
+    const nullableProperties = new Set<string>();
+
+    const description =
+      typeof value['description'] === 'string' ? value['description'].trim() : '';
+    if (description) {
+      out['description'] = description;
+    }
 
     for (const [k, v] of Object.entries(value)) {
-      if (
-        k === '$schema' ||
-        k === '$id' ||
-        k === '$defs' ||
-        k === 'definitions' ||
-        k === '$comment' ||
-        k === 'default' ||
-        k === 'examples' ||
-        k === 'title' ||
-        k === 'readOnly' ||
-        k === 'writeOnly' ||
-        k === 'deprecated'
-      ) {
+      if (k === 'description') {
+        continue;
+      }
+      if (droppedKeys.has(k)) {
         continue;
       }
 
-      if (k === '$ref') {
+      if (k === '$ref' || k === 'allOf' || k === 'anyOf' || k === 'oneOf') {
         continue;
       }
 
       if (k === 'const') {
-        const existingEnum = out['enum'];
-        if (!Array.isArray(existingEnum)) {
-          out['enum'] = [clean(v)];
+        if (!Array.isArray(out['enum'])) {
+          out['enum'] = [clean(v, { topLevel: false }).value];
         }
+        continue;
+      }
+
+      if (unsupportedConstraints.has(k)) {
+        if (
+          typeof v === 'string' ||
+          typeof v === 'number' ||
+          typeof v === 'boolean'
+        ) {
+          appendHintToDescription(out, `${k}: ${String(v)}`);
+        }
+        continue;
+      }
+
+      if (k === 'propertyNames') {
+        appendHintToDescription(out, 'propertyNames: removed');
         continue;
       }
 
@@ -483,17 +520,79 @@ function cleanJsonSchemaForAntigravity(schema: unknown): unknown {
         k === 'unevaluatedProperties'
       ) {
         if (typeof v === 'boolean') {
-          appendHintToDescription(
-            out,
-            `${k}: ${v ? 'allowed' : 'disallowed'}.`,
-          );
+          appendHintToDescription(out, v ? `${k}: allowed` : `${k}: disallowed`);
         } else if (isRecord(v)) {
-          appendHintToDescription(out, `${k}: schema present (simplified).`);
+          appendHintToDescription(out, `${k}: schema present (simplified)`);
         }
         continue;
       }
 
-      out[k] = clean(v);
+      if (k === 'properties') {
+        if (!isRecord(v)) {
+          continue;
+        }
+
+        const cleanedProps: Record<string, unknown> = {};
+        for (const [propName, propSchema] of Object.entries(v)) {
+          const cleaned = clean(propSchema, { topLevel: false });
+          cleanedProps[propName] = cleaned.value;
+          if (cleaned.nullable) {
+            nullableProperties.add(propName);
+          }
+        }
+        out['properties'] = cleanedProps;
+        continue;
+      }
+
+      if (k === 'required') {
+        if (Array.isArray(v)) {
+          out['required'] = v.filter(
+            (item): item is string =>
+              typeof item === 'string' && item.trim().length > 0,
+          );
+        }
+        continue;
+      }
+
+      out[k] = clean(v, { topLevel: false }).value;
+    }
+
+    const enumRaw = out['enum'];
+    if (Array.isArray(enumRaw)) {
+      const normalized = enumRaw.map(stringifyEnumValue);
+      out['enum'] = normalized;
+      if (normalized.length > 1 && normalized.length <= 10) {
+        appendHintToDescription(out, `Allowed: ${normalized.join(', ')}`);
+      }
+    }
+
+    let nullable = false;
+    const typeRaw = out['type'];
+    if (Array.isArray(typeRaw)) {
+      const typeStrings = typeRaw
+        .filter((item): item is string => typeof item === 'string')
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
+
+      const nonNullTypes = typeStrings.filter((t) => t !== 'null');
+      const hasNull = typeStrings.some((t) => t === 'null');
+
+      out['type'] = nonNullTypes[0] ?? 'string';
+      if (nonNullTypes.length > 1) {
+        appendHintToDescription(out, `Accepts: ${nonNullTypes.join(' | ')}`);
+      }
+      if (hasNull) {
+        appendHintToDescription(out, '(nullable)');
+        nullable = true;
+      }
+    }
+
+    if (out['type'] === undefined) {
+      if (isRecord(out['properties'])) {
+        out['type'] = 'object';
+      } else if (out['items'] !== undefined) {
+        out['type'] = 'array';
+      }
     }
 
     const propertiesRaw = out['properties'];
@@ -501,10 +600,12 @@ function cleanJsonSchemaForAntigravity(schema: unknown): unknown {
 
     if (isRecord(propertiesRaw) && Array.isArray(requiredRaw)) {
       const propertyNames = new Set(Object.keys(propertiesRaw));
-
       const validRequired = requiredRaw.filter(
         (prop): prop is string =>
-          typeof prop === 'string' && propertyNames.has(prop),
+          typeof prop === 'string' &&
+          prop.trim().length > 0 &&
+          propertyNames.has(prop) &&
+          !nullableProperties.has(prop),
       );
 
       if (validRequired.length > 0) {
@@ -514,19 +615,52 @@ function cleanJsonSchemaForAntigravity(schema: unknown): unknown {
       }
     }
 
-    const typeRaw = out['type'];
+    const typeValue = out['type'];
     if (
-      typeof typeRaw === 'string' &&
-      typeRaw.toLowerCase() === 'array' &&
+      typeof typeValue === 'string' &&
+      typeValue.toLowerCase() === 'array' &&
       out['items'] === undefined
     ) {
       out['items'] = { type: 'string' };
     }
 
-    return out;
+    const treatAsObject =
+      (typeof typeValue === 'string' && typeValue.toLowerCase() === 'object') ||
+      isRecord(out['properties']);
+
+    if (treatAsObject) {
+      out['type'] = 'object';
+
+      const properties = isRecord(out['properties']) ? { ...out['properties'] } : {};
+      const required = Array.isArray(out['required'])
+        ? out['required'].filter(
+            (item): item is string =>
+              typeof item === 'string' && item.trim().length > 0,
+          )
+        : [];
+
+      if (Object.keys(properties).length === 0) {
+        if (!('reason' in properties)) {
+          properties['reason'] = {
+            type: 'string',
+            description: 'Brief explanation of why you are calling this tool',
+          };
+        }
+        out['properties'] = properties;
+        out['required'] = ['reason'];
+      } else if (required.length === 0 && !ctx.topLevel) {
+        if (!('_' in properties)) {
+          properties['_'] = { type: 'boolean' };
+        }
+        out['properties'] = properties;
+        out['required'] = ['_'];
+      }
+    }
+
+    return { value: out, nullable };
   };
 
-  const cleanedRoot = clean(schema);
+  const cleanedRoot = clean(schema, { topLevel: true }).value;
   if (!isRecord(cleanedRoot)) {
     return cleanedRoot;
   }
@@ -544,9 +678,9 @@ function cleanJsonSchemaForAntigravity(schema: unknown): unknown {
 //   return `${adj}-${noun}-${randomPart}`;
 // }
 
-const EMPTY_TOOL_SCHEMA_PLACEHOLDER_NAME = '_placeholder';
+const EMPTY_TOOL_SCHEMA_PLACEHOLDER_NAME = 'reason';
 const EMPTY_TOOL_SCHEMA_PLACEHOLDER_DESCRIPTION =
-  'Placeholder. Always pass true.';
+  'Brief explanation of why you are calling this tool';
 const GEMINI_3_PRO_MAX_OUTPUT_TOKENS_ANTIGRAVITY = 65535;
 const TOOL_ENABLED_INSTRUCTION =
   'When tools are provided, use tool calls instead of describing tool use. Never claim you lack tool access or permissions.';
@@ -568,7 +702,7 @@ function normalizeToolParametersSchema(
 
   if (Object.keys(properties).length === 0) {
     properties[EMPTY_TOOL_SCHEMA_PLACEHOLDER_NAME] = {
-      type: 'boolean',
+      type: 'string',
       description: EMPTY_TOOL_SCHEMA_PLACEHOLDER_DESCRIPTION,
     };
     if (!required.includes(EMPTY_TOOL_SCHEMA_PLACEHOLDER_NAME)) {
