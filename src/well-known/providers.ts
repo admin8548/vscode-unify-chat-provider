@@ -85,8 +85,7 @@ export const WELL_KNOWN_PROVIDERS: WellKnownProviderConfig[] = [
   {
     name: 'Google Vertex AI',
     type: 'google-vertex-ai',
-    baseUrl:
-      'https://<location>-aiplatform.googleapis.com/v1/projects/<project>/locations/<location>',
+    baseUrl: 'https://aiplatform.googleapis.com',
     authTypes: ['google-vertex-ai-auth'],
     models: wellKnowns(
       'gemini-3-pro-preview',
