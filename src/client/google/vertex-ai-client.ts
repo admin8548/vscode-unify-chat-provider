@@ -3,7 +3,11 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { GoogleAIStudioProvider } from './ai-studio-client';
 import { ModelConfig, ProviderConfig } from '../../types';
-import { DEFAULT_TIMEOUT_CONFIG } from '../../utils';
+import {
+  DEFAULT_CHAT_TIMEOUT_CONFIG,
+  DEFAULT_NORMAL_TIMEOUT_CONFIG,
+  FetchMode,
+} from '../../utils';
 import type {
   AuthTokenInfo,
   GoogleVertexAIAuthConfig,
@@ -135,10 +139,16 @@ export class VertexAIProvider extends GoogleAIStudioProvider {
     modelConfig: ModelConfig | undefined,
     streamEnabled: boolean,
     credential?: AuthTokenInfo,
+    mode: FetchMode = 'chat',
   ): GoogleGenAI {
+    const fallbackTimeout =
+      mode === 'chat'
+        ? DEFAULT_CHAT_TIMEOUT_CONFIG
+        : DEFAULT_NORMAL_TIMEOUT_CONFIG;
+
     const requestTimeoutMs = streamEnabled
-      ? this.config.timeout?.connection ?? DEFAULT_TIMEOUT_CONFIG.connection
-      : this.config.timeout?.response ?? DEFAULT_TIMEOUT_CONFIG.response;
+      ? this.config.timeout?.connection ?? fallbackTimeout.connection
+      : this.config.timeout?.response ?? fallbackTimeout.response;
 
     const token = getToken(credential);
     const auth = this.config.auth;

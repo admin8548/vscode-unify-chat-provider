@@ -20,7 +20,9 @@ import type {
 } from 'ollama';
 import {
   decodeStatefulMarkerPart,
-  DEFAULT_TIMEOUT_CONFIG,
+  DEFAULT_CHAT_TIMEOUT_CONFIG,
+  DEFAULT_NORMAL_TIMEOUT_CONFIG,
+  FetchMode,
   encodeStatefulMarkerPart,
   isCacheControlMarker,
   isImageMarker,
@@ -80,17 +82,24 @@ export class OllamaProvider implements ApiProvider {
     logger?: ProviderHttpLogger,
     stream?: boolean,
     abortSignal?: AbortSignal,
+    mode: FetchMode = 'chat',
   ): Ollama {
     const streamEnabled = stream ?? true;
+    const fallbackTimeout =
+      mode === 'chat'
+        ? DEFAULT_CHAT_TIMEOUT_CONFIG
+        : DEFAULT_NORMAL_TIMEOUT_CONFIG;
+
     const requestTimeoutMs = streamEnabled
-      ? (this.config.timeout?.connection ?? DEFAULT_TIMEOUT_CONFIG.connection)
-      : (this.config.timeout?.response ?? DEFAULT_TIMEOUT_CONFIG.response);
+      ? (this.config.timeout?.connection ?? fallbackTimeout.connection)
+      : (this.config.timeout?.response ?? fallbackTimeout.response);
 
     return new Ollama({
       host: this.baseUrl,
       fetch: createCustomFetch({
         connectionTimeoutMs: requestTimeoutMs,
         logger,
+        type: mode,
         abortSignal,
       }),
       headers,
@@ -491,7 +500,7 @@ export class OllamaProvider implements ApiProvider {
     try {
       if (streamEnabled) {
         const responseTimeoutMs =
-          this.config.timeout?.response ?? DEFAULT_TIMEOUT_CONFIG.response;
+          this.config.timeout?.response ?? DEFAULT_CHAT_TIMEOUT_CONFIG.response;
 
         stream = await client.chat({ ...baseBody, stream: true });
         const timedStream = withIdleTimeout(
@@ -759,7 +768,13 @@ export class OllamaProvider implements ApiProvider {
       providerType: this.config.type,
     });
     const headers = this.buildHeaders(credential);
-    const client = this.createClient(headers, logger);
+    const client = this.createClient(
+      headers,
+      logger,
+      false,
+      undefined,
+      'normal',
+    );
 
     try {
       const list = await client.list();

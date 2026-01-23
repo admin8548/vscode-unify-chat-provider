@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { pickQuickItem } from '../component';
-import { DEFAULT_TIMEOUT_CONFIG } from '../../utils';
+import { DEFAULT_CHAT_TIMEOUT_CONFIG } from '../../utils';
 import { TimeoutConfig } from '../../types';
 import type {
   TimeoutFormRoute,
@@ -34,8 +34,9 @@ export async function runTimeoutFormScreen(
     {
       label: `$(clock) ${t('Response Timeout')}`,
       description: formatTimeoutValue(timeout.response, 'response'),
-      detail:
-        t('Maximum time to wait between data chunks during streaming (resets on each data received)'),
+      detail: t(
+        'Maximum time to wait between data chunks during streaming (resets on each data received)',
+      ),
       field: 'response',
     },
     { label: '', kind: vscode.QuickPickItemKind.Separator },
@@ -71,7 +72,7 @@ function formatTimeoutValue(
   value: number | undefined,
   field: 'connection' | 'response',
 ): string {
-  const defaultValue = DEFAULT_TIMEOUT_CONFIG[field];
+  const defaultValue = DEFAULT_CHAT_TIMEOUT_CONFIG[field];
   if (value === undefined) {
     return t('default ({0})', formatMs(defaultValue));
   }
@@ -99,11 +100,14 @@ async function editTimeoutField(
   field: 'connection' | 'response',
 ): Promise<void> {
   const currentValue = timeout[field];
-  const defaultValue = DEFAULT_TIMEOUT_CONFIG[field];
+  const defaultValue = DEFAULT_CHAT_TIMEOUT_CONFIG[field];
 
   const label =
     field === 'connection' ? t('Connection Timeout') : t('Response Timeout');
-  const placeholder = t('Enter timeout in milliseconds (default: {0})', defaultValue);
+  const placeholder = t(
+    'Enter timeout in milliseconds (default: {0})',
+    defaultValue,
+  );
 
   const input = await vscode.window.showInputBox({
     title: label,

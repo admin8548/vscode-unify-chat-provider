@@ -2,7 +2,12 @@ import OpenAI from 'openai';
 import * as vscode from 'vscode';
 import type { AuthTokenInfo } from '../../auth/types';
 import type { ProviderHttpLogger, RequestLogger } from '../../logger';
-import { buildOpencodeUserAgent, DEFAULT_TIMEOUT_CONFIG } from '../../utils';
+import {
+  DEFAULT_CHAT_TIMEOUT_CONFIG,
+  DEFAULT_NORMAL_TIMEOUT_CONFIG,
+  FetchMode,
+  buildOpencodeUserAgent,
+} from '../../utils';
 import type { ModelConfig, PerformanceTrace } from '../../types';
 import { createCustomFetch, getToken } from '../utils';
 import { OpenAIResponsesProvider } from './responses-client';
@@ -109,10 +114,16 @@ export class OpenAICodeXProvider extends OpenAIResponsesProvider {
     stream: boolean,
     credential?: AuthTokenInfo,
     abortSignal?: AbortSignal,
+    mode: FetchMode = 'chat',
   ): OpenAI {
+    const fallbackTimeout =
+      mode === 'chat'
+        ? DEFAULT_CHAT_TIMEOUT_CONFIG
+        : DEFAULT_NORMAL_TIMEOUT_CONFIG;
+
     const requestTimeoutMs = stream
-      ? (this.config.timeout?.connection ?? DEFAULT_TIMEOUT_CONFIG.connection)
-      : (this.config.timeout?.response ?? DEFAULT_TIMEOUT_CONFIG.response);
+      ? (this.config.timeout?.connection ?? fallbackTimeout.connection)
+      : (this.config.timeout?.response ?? fallbackTimeout.response);
 
     const token = getToken(credential);
 
@@ -120,6 +131,7 @@ export class OpenAICodeXProvider extends OpenAIResponsesProvider {
       connectionTimeoutMs: requestTimeoutMs,
       logger,
       urlTransformer: rewriteToCodexEndpoint,
+      type: mode,
       abortSignal,
     });
 

@@ -5,7 +5,9 @@ import type { AuthTokenInfo } from '../auth/types';
 import { ModelConfig, PerformanceTrace, ProviderConfig } from '../types';
 import {
   bodyInitToLoggableValue,
-  DEFAULT_RETRY_CONFIG,
+  DEFAULT_CHAT_RETRY_CONFIG,
+  DEFAULT_NORMAL_RETRY_CONFIG,
+  FetchMode,
   fetchWithRetry,
   headersInitToRecord,
   normalizeBaseUrlInput,
@@ -384,6 +386,7 @@ export interface CreateCustomFetchOptions {
   logger?: ProviderHttpLogger;
   urlTransformer?: (url: string) => string;
   retryConfig?: RetryConfig;
+  type: FetchMode;
   /**
    * Optional upstream abort signal (e.g. derived from VSCode CancellationToken).
    * Used as a fallback when the caller does not provide `init.signal`.
@@ -402,6 +405,7 @@ export function createCustomFetch(
     logger,
     urlTransformer,
     retryConfig,
+    type,
     abortSignal,
   } = options;
 
@@ -475,7 +479,11 @@ export function createCustomFetch(
         ...init,
         signal: combined.signal,
         logger,
-        retryConfig: retryConfig ?? DEFAULT_RETRY_CONFIG,
+        retryConfig:
+          retryConfig ??
+          (type === 'chat'
+            ? DEFAULT_CHAT_RETRY_CONFIG
+            : DEFAULT_NORMAL_RETRY_CONFIG),
         connectionTimeoutMs,
       });
 

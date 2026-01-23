@@ -12,8 +12,10 @@ import OpenAI from 'openai';
 import type { AuthTokenInfo } from '../../auth/types';
 import {
   decodeStatefulMarkerPart,
-  DEFAULT_TIMEOUT_CONFIG,
+  DEFAULT_CHAT_TIMEOUT_CONFIG,
+  DEFAULT_NORMAL_TIMEOUT_CONFIG,
   encodeStatefulMarkerPart,
+  FetchMode,
   isCacheControlMarker,
   isImageMarker,
   isInternalMarker,
@@ -99,10 +101,16 @@ export class OpenAIResponsesProvider implements ApiProvider {
     stream: boolean,
     credential?: AuthTokenInfo,
     abortSignal?: AbortSignal,
+    mode: FetchMode = 'chat',
   ): OpenAI {
+    const fallbackTimeout =
+      mode === 'chat'
+        ? DEFAULT_CHAT_TIMEOUT_CONFIG
+        : DEFAULT_NORMAL_TIMEOUT_CONFIG;
+
     const requestTimeoutMs = stream
-      ? (this.config.timeout?.connection ?? DEFAULT_TIMEOUT_CONFIG.connection)
-      : (this.config.timeout?.response ?? DEFAULT_TIMEOUT_CONFIG.response);
+      ? (this.config.timeout?.connection ?? fallbackTimeout.connection)
+      : (this.config.timeout?.response ?? fallbackTimeout.response);
 
     const token = getToken(credential);
 
@@ -113,6 +121,7 @@ export class OpenAIResponsesProvider implements ApiProvider {
       fetch: createCustomFetch({
         connectionTimeoutMs: requestTimeoutMs,
         logger,
+        type: mode,
         abortSignal,
       }),
     });
@@ -484,7 +493,7 @@ export class OpenAIResponsesProvider implements ApiProvider {
     try {
       if (streamEnabled) {
         const responseTimeoutMs =
-          this.config.timeout?.response ?? DEFAULT_TIMEOUT_CONFIG.response;
+          this.config.timeout?.response ?? DEFAULT_CHAT_TIMEOUT_CONFIG.response;
 
         const stream = await client.responses.create(
           { ...baseBody, stream: true },
@@ -794,7 +803,13 @@ export class OpenAIResponsesProvider implements ApiProvider {
     });
     try {
       const result: ModelConfig[] = [];
-      const client = this.createClient(logger, false, credential);
+      const client = this.createClient(
+        logger,
+        false,
+        credential,
+        undefined,
+        'normal',
+      );
       const page = await client.models.list({
         headers: this.buildHeaders(credential),
       });

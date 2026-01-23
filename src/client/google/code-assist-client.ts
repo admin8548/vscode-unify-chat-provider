@@ -16,7 +16,7 @@ import type { RequestLogger } from '../../logger';
 import type { AuthTokenInfo } from '../../auth/types';
 import { ModelConfig, PerformanceTrace } from '../../types';
 import {
-  DEFAULT_TIMEOUT_CONFIG,
+  DEFAULT_CHAT_TIMEOUT_CONFIG,
   decodeStatefulMarkerPart,
   isCacheControlMarker,
   isImageMarker,
@@ -1991,8 +1991,8 @@ export abstract class GoogleCodeAssistProvider extends GoogleAIStudioProvider {
 
     const streamEnabled = model.stream ?? true;
     const requestTimeoutMs = streamEnabled
-      ? (this.config.timeout?.connection ?? DEFAULT_TIMEOUT_CONFIG.connection)
-      : (this.config.timeout?.response ?? DEFAULT_TIMEOUT_CONFIG.response);
+      ? (this.config.timeout?.connection ?? DEFAULT_CHAT_TIMEOUT_CONFIG.connection)
+      : (this.config.timeout?.response ?? DEFAULT_CHAT_TIMEOUT_CONFIG.response);
 
     const requestedModelId = getBaseModelId(model.id);
     const preferredGemini3ThinkingLevel =
@@ -2174,6 +2174,7 @@ export abstract class GoogleCodeAssistProvider extends GoogleAIStudioProvider {
         connectionTimeoutMs: requestTimeoutMs,
         logger,
         retryConfig,
+        type: 'chat',
         abortSignal: abortController.signal,
       });
 
@@ -2244,8 +2245,8 @@ export abstract class GoogleCodeAssistProvider extends GoogleAIStudioProvider {
       this.activeEndpointBaseUrl = responseEndpointBase;
 
       if (streamEnabled) {
-        const responseTimeoutMs =
-          this.config.timeout?.response ?? DEFAULT_TIMEOUT_CONFIG.response;
+          const responseTimeoutMs =
+            this.config.timeout?.response ?? DEFAULT_CHAT_TIMEOUT_CONFIG.response;
 
         const stream = this.streamAntigravitySse(
           response,

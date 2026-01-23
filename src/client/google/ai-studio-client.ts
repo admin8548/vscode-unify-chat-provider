@@ -20,11 +20,14 @@ import { ModelConfig, PerformanceTrace, ProviderConfig } from '../../types';
 import type { AuthTokenInfo } from '../../auth/types';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { ProviderHttpLogger } from '../../logger';
-import { bodyInitToLoggableValue, headersInitToRecord } from '../../utils';
 import {
+  bodyInitToLoggableValue,
   decodeStatefulMarkerPart,
-  DEFAULT_TIMEOUT_CONFIG,
+  DEFAULT_CHAT_TIMEOUT_CONFIG,
+  DEFAULT_NORMAL_TIMEOUT_CONFIG,
+  FetchMode,
   encodeStatefulMarkerPart,
+  headersInitToRecord,
   isCacheControlMarker,
   isImageMarker,
   isInternalMarker,
@@ -97,10 +100,16 @@ export class GoogleAIStudioProvider implements ApiProvider {
     modelConfig: ModelConfig | undefined,
     streamEnabled: boolean,
     credential?: AuthTokenInfo,
+    mode: FetchMode = 'chat',
   ): GoogleGenAI {
+    const fallbackTimeout =
+      mode === 'chat'
+        ? DEFAULT_CHAT_TIMEOUT_CONFIG
+        : DEFAULT_NORMAL_TIMEOUT_CONFIG;
+
     const requestTimeoutMs = streamEnabled
-      ? (this.config.timeout?.connection ?? DEFAULT_TIMEOUT_CONFIG.connection)
-      : (this.config.timeout?.response ?? DEFAULT_TIMEOUT_CONFIG.response);
+      ? (this.config.timeout?.connection ?? fallbackTimeout.connection)
+      : (this.config.timeout?.response ?? fallbackTimeout.response);
 
     const credentialValue = getToken(credential);
 
@@ -706,7 +715,7 @@ export class GoogleAIStudioProvider implements ApiProvider {
     try {
       if (streamEnabled) {
         const responseTimeoutMs =
-          this.config.timeout?.response ?? DEFAULT_TIMEOUT_CONFIG.response;
+          this.config.timeout?.response ?? DEFAULT_CHAT_TIMEOUT_CONFIG.response;
 
         const stream = await withGoogleFetchLogger(logger, async () => {
           return client.models.generateContentStream({
@@ -908,7 +917,12 @@ export class GoogleAIStudioProvider implements ApiProvider {
       providerType: this.config.type,
     });
     try {
-      const client = this.createClient(undefined, false, credential);
+    const client = this.createClient(
+      undefined,
+      false,
+      credential,
+      'normal',
+    );
       const result: ModelConfig[] = [];
       const pager = await withGoogleFetchLogger(logger, async () => {
         return client.models.list({

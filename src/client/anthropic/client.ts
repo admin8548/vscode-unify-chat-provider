@@ -20,7 +20,9 @@ import { createSimpleHttpLogger } from '../../logger';
 import type { ProviderHttpLogger, RequestLogger } from '../../logger';
 import { ApiProvider } from '../interface';
 import {
-  DEFAULT_TIMEOUT_CONFIG,
+  DEFAULT_CHAT_TIMEOUT_CONFIG,
+  DEFAULT_NORMAL_TIMEOUT_CONFIG,
+  FetchMode,
   isCacheControlMarker,
   isImageMarker,
   isInternalMarker,
@@ -80,10 +82,16 @@ export class AnthropicProvider implements ApiProvider {
     stream: boolean,
     credential?: AuthTokenInfo,
     abortSignal?: AbortSignal,
+    mode: FetchMode = 'chat',
   ): Anthropic {
+    const fallbackTimeout =
+      mode === 'chat'
+        ? DEFAULT_CHAT_TIMEOUT_CONFIG
+        : DEFAULT_NORMAL_TIMEOUT_CONFIG;
+
     const requestTimeoutMs = stream
-      ? (this.config.timeout?.connection ?? DEFAULT_TIMEOUT_CONFIG.connection)
-      : (this.config.timeout?.response ?? DEFAULT_TIMEOUT_CONFIG.response);
+      ? (this.config.timeout?.connection ?? fallbackTimeout.connection)
+      : (this.config.timeout?.response ?? fallbackTimeout.response);
 
     const apiKey = getToken(credential);
 
@@ -94,6 +102,7 @@ export class AnthropicProvider implements ApiProvider {
       fetch: createCustomFetch({
         connectionTimeoutMs: requestTimeoutMs,
         logger,
+        type: mode,
         abortSignal,
       }),
     });
@@ -815,7 +824,7 @@ export class AnthropicProvider implements ApiProvider {
 
         // Wrap stream with idle timeout
         const responseTimeoutMs =
-          this.config.timeout?.response ?? DEFAULT_TIMEOUT_CONFIG.response;
+          this.config.timeout?.response ?? DEFAULT_CHAT_TIMEOUT_CONFIG.response;
         const timedStream = withIdleTimeout(
           sdkStream,
           responseTimeoutMs,
@@ -1242,7 +1251,13 @@ export class AnthropicProvider implements ApiProvider {
     let afterId: string | undefined;
 
     try {
-      const client = this.createClient(logger, false, credential);
+      const client = this.createClient(
+        logger,
+        false,
+        credential,
+        undefined,
+        'normal',
+      );
 
       do {
         const page = await client.models.list(

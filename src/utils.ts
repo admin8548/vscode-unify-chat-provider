@@ -15,10 +15,28 @@ import { t } from './i18n';
 export const RETRYABLE_STATUS_CODES = [408, 409, 429] as const;
 
 /**
+ * Fetch mode for applying defaults.
+ */
+export type FetchMode = 'chat' | 'normal';
+
+/**
  * Default retry configuration following industry standards.
  * Uses exponential backoff with jitter.
  */
-export const DEFAULT_RETRY_CONFIG = {
+export const DEFAULT_NORMAL_RETRY_CONFIG = {
+  /** Maximum number of retry attempts */
+  maxRetries: 3,
+  /** Initial delay before first retry in milliseconds */
+  initialDelayMs: 1000,
+  /** Maximum delay cap in milliseconds */
+  maxDelayMs: 5000,
+  /** Backoff multiplier (delay doubles each attempt by default) */
+  backoffMultiplier: 2,
+  /** Jitter factor (0-1, adds randomness to prevent thundering herd) */
+  jitterFactor: 0.1,
+} as const;
+
+export const DEFAULT_CHAT_RETRY_CONFIG = {
   /** Maximum number of retry attempts */
   maxRetries: 10,
   /** Initial delay before first retry in milliseconds */
@@ -34,7 +52,14 @@ export const DEFAULT_RETRY_CONFIG = {
 /**
  * Default timeout configuration for HTTP requests and SSE streams.
  */
-export const DEFAULT_TIMEOUT_CONFIG = {
+export const DEFAULT_NORMAL_TIMEOUT_CONFIG = {
+  /** Connection timeout in milliseconds */
+  connection: 10_000,
+  /** Response/idle timeout in milliseconds */
+  response: 10_000,
+} as const;
+
+export const DEFAULT_CHAT_TIMEOUT_CONFIG = {
   /** Connection timeout in milliseconds */
   connection: 60_000,
   /** Response/idle timeout in milliseconds */
@@ -57,7 +82,7 @@ export interface RetryConfig {
 export interface FetchWithRetryOptions extends RequestInit {
   retryConfig?: RetryConfig;
   logger?: ProviderHttpLogger;
-  /** Connection timeout in milliseconds. If not specified, uses DEFAULT_TIMEOUT_CONFIG.connection */
+  /** Connection timeout in milliseconds. If not specified, uses DEFAULT_NORMAL_TIMEOUT_CONFIG.connection */
   connectionTimeoutMs?: number;
 }
 
@@ -313,15 +338,19 @@ export async function fetchWithRetry(
   options: FetchWithRetryOptions = {},
 ): Promise<Response> {
   const { retryConfig, logger, connectionTimeoutMs, ...fetchOptions } = options;
-  const maxRetries = retryConfig?.maxRetries ?? DEFAULT_RETRY_CONFIG.maxRetries;
+  const maxRetries =
+    retryConfig?.maxRetries ?? DEFAULT_NORMAL_RETRY_CONFIG.maxRetries;
   const initialDelayMs =
-    retryConfig?.initialDelayMs ?? DEFAULT_RETRY_CONFIG.initialDelayMs;
-  const maxDelayMs = retryConfig?.maxDelayMs ?? DEFAULT_RETRY_CONFIG.maxDelayMs;
+    retryConfig?.initialDelayMs ?? DEFAULT_NORMAL_RETRY_CONFIG.initialDelayMs;
+  const maxDelayMs =
+    retryConfig?.maxDelayMs ?? DEFAULT_NORMAL_RETRY_CONFIG.maxDelayMs;
   const backoffMultiplier =
-    retryConfig?.backoffMultiplier ?? DEFAULT_RETRY_CONFIG.backoffMultiplier;
+    retryConfig?.backoffMultiplier ??
+    DEFAULT_NORMAL_RETRY_CONFIG.backoffMultiplier;
   const jitterFactor =
-    retryConfig?.jitterFactor ?? DEFAULT_RETRY_CONFIG.jitterFactor;
-  const connTimeout = connectionTimeoutMs ?? DEFAULT_TIMEOUT_CONFIG.connection;
+    retryConfig?.jitterFactor ?? DEFAULT_NORMAL_RETRY_CONFIG.jitterFactor;
+  const connTimeout =
+    connectionTimeoutMs ?? DEFAULT_NORMAL_TIMEOUT_CONFIG.connection;
 
   let lastResponse: Response | undefined;
   let lastError: Error | undefined;
