@@ -235,8 +235,17 @@ class GitHubCopilotResponsesProvider extends OpenAIResponsesProvider {
 }
 
 export class GitHubCopilotProvider implements ApiProvider {
+  private readonly providerConfig: ProviderConfig;
   private readonly chatProvider: GitHubCopilotChatCompletionProvider;
   private readonly responsesProvider: GitHubCopilotResponsesProvider;
+
+  private assertCopilotAuth(): void {
+    if (this.providerConfig.auth?.method !== 'github-copilot') {
+      throw new Error(
+        'GitHub Copilot provider requires auth method "github-copilot".',
+      );
+    }
+  }
 
   constructor(config: ProviderConfig) {
     const extraBody = config.extraBody ?? {};
@@ -244,6 +253,7 @@ export class GitHubCopilotProvider implements ApiProvider {
     const configWithDefaults: ProviderConfig = hasStore
       ? config
       : { ...config, extraBody: { ...extraBody, store: false } };
+    this.providerConfig = configWithDefaults;
 
     this.chatProvider = new GitHubCopilotChatCompletionProvider(
       configWithDefaults,
@@ -263,6 +273,7 @@ export class GitHubCopilotProvider implements ApiProvider {
     logger: RequestLogger,
     credential: AuthTokenInfo,
   ): AsyncGenerator<LanguageModelResponsePart2> {
+    this.assertCopilotAuth();
     const provider = shouldUseResponsesApi(model.id)
       ? this.responsesProvider
       : this.chatProvider;
@@ -284,6 +295,7 @@ export class GitHubCopilotProvider implements ApiProvider {
   }
 
   async getAvailableModels(credential: AuthTokenInfo): Promise<ModelConfig[]> {
+    this.assertCopilotAuth();
     const chatResult = await this.chatProvider.getAvailableModels(credential);
     const responsesResult =
       await this.responsesProvider.getAvailableModels(credential);

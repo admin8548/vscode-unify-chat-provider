@@ -39,6 +39,12 @@ const QWEN_STREAM_GUARD_DUMMY_TOOL = {
 } satisfies LanguageModelChatTool;
 
 export class QwenCodeProvider extends OpenAIChatCompletionProvider {
+  private assertQwenCodeAuth(): void {
+    if (this.config.auth?.method !== 'qwen-code') {
+      throw new Error('Qwen Code provider requires auth method "qwen-code".');
+    }
+  }
+
   protected override resolveBaseUrl(config: ProviderConfig): string {
     const auth = config.auth;
     const resourceUrl =
@@ -66,6 +72,7 @@ export class QwenCodeProvider extends OpenAIChatCompletionProvider {
     logger: RequestLogger,
     credential: AuthTokenInfo,
   ): AsyncGenerator<LanguageModelResponsePart2> {
+    this.assertQwenCodeAuth();
     const modelWithoutThinking: ModelConfig = model.thinking
       ? { ...model, thinking: undefined }
       : model;
@@ -108,6 +115,7 @@ export class QwenCodeProvider extends OpenAIChatCompletionProvider {
   }
 
   async getAvailableModels(credential: AuthTokenInfo): Promise<ModelConfig[]> {
+    this.assertQwenCodeAuth();
     const visionModel = mergeWithWellKnownModel({ id: 'qwen3-vl-plus' });
     visionModel.id = 'vision-model';
     return [
