@@ -287,6 +287,16 @@ export const WELL_KNOWN_PROVIDERS: WellKnownProviderConfig[] = [
     ],
   },
   {
+    name: 'iFlow',
+    type: 'openai-chat-completion',
+    baseUrl: 'https://apis.iflow.cn/v1',
+    authTypes: ['iflow-cli', 'api-key'],
+    extraHeaders: {
+      'User-Agent': 'iFlow-Cli',
+    },
+    models: [],
+  },
+  {
     name: 'DeepSeek',
     type: 'openai-chat-completion',
     baseUrl: 'https://api.deepseek.com',

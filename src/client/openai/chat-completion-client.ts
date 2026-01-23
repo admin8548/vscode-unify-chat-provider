@@ -505,11 +505,12 @@ export class OpenAIChatCompletionProvider implements ApiProvider {
         ? { reasoning: { enabled: false } }
         : type === 'disable_reasoning'
           ? { disable_reasoning: true }
-        : type === 'thinking'
-          ? { thinking: { type: 'disabled' } }
-          : type === 'enable_thinking' || type === 'enable_thinking_with_budget'
-            ? { enable_thinking: false }
-            : { reasoning_effort: 'none' };
+          : type === 'thinking'
+            ? { thinking: { type: 'disabled' } }
+            : type === 'enable_thinking' ||
+                type === 'enable_thinking_with_budget'
+              ? { enable_thinking: false }
+              : { reasoning_effort: 'none' };
     }
 
     if (thinking.budgetTokens !== undefined) {
@@ -524,17 +525,17 @@ export class OpenAIChatCompletionProvider implements ApiProvider {
           }
         : type === 'disable_reasoning'
           ? { disable_reasoning: shouldDisableReasoning }
-        : type === 'thinking'
-          ? { thinking: { type: 'enabled' } }
-          : type === 'enable_thinking_with_budget'
-            ? {
-                enable_thinking: true,
-                thinking_budget: thinking.budgetTokens,
-              }
-            : type === 'enable_thinking'
-              ? { enable_thinking: true }
-              : // Defaults to 'medium' effort if budget is set
-                { reasoning_effort: 'medium' };
+          : type === 'thinking'
+            ? { thinking: { type: 'enabled' } }
+            : type === 'enable_thinking_with_budget'
+              ? {
+                  enable_thinking: true,
+                  thinking_budget: thinking.budgetTokens,
+                }
+              : type === 'enable_thinking'
+                ? { enable_thinking: true }
+                : // Defaults to 'medium' effort if budget is set
+                  { reasoning_effort: 'medium' };
     }
 
     if (thinking.effort !== undefined) {
@@ -542,23 +543,24 @@ export class OpenAIChatCompletionProvider implements ApiProvider {
         ? { reasoning: { effort: thinking.effort } }
         : type === 'disable_reasoning'
           ? { disable_reasoning: shouldDisableReasoning }
-        : type === 'thinking'
-          ? { thinking: { type: 'enabled' } }
-          : type === 'enable_thinking' || type === 'enable_thinking_with_budget'
-            ? { enable_thinking: true }
-            : { reasoning_effort: thinking.effort };
+          : type === 'thinking'
+            ? { thinking: { type: 'enabled' } }
+            : type === 'enable_thinking' ||
+                type === 'enable_thinking_with_budget'
+              ? { enable_thinking: true }
+              : { reasoning_effort: thinking.effort };
     }
 
     return type === 'reasoning'
       ? { reasoning: { enabled: true } }
       : type === 'disable_reasoning'
         ? { disable_reasoning: false }
-      : type === 'thinking'
-        ? { thinking: { type: 'enabled' } }
-      : type === 'enable_thinking' || type === 'enable_thinking_with_budget'
-        ? { enable_thinking: true }
-        : // Defaults to 'medium' effort if not set effort or budget
-            {};
+        : type === 'thinking'
+          ? { thinking: { type: 'enabled' } }
+          : type === 'enable_thinking' || type === 'enable_thinking_with_budget'
+            ? { enable_thinking: true }
+            : // Defaults to 'medium' effort if not set effort or budget
+              {};
   }
 
   private normalizeReasoningMaxTokens(
@@ -618,6 +620,11 @@ export class OpenAIChatCompletionProvider implements ApiProvider {
     );
     const useThinkingParam3 = isFeatureSupported(
       FeatureId.OpenAIUseThinkingParam3,
+      this.config,
+      model,
+    );
+    const useReasoningSplitParam = isFeatureSupported(
+      FeatureId.OpenAIUseReasoningSplitParam,
       this.config,
       model,
     );
@@ -706,6 +713,7 @@ export class OpenAIChatCompletionProvider implements ApiProvider {
       ...this.buildReasoningParams(model, thinkingParamType),
       ...(useTopK && model.topK !== undefined ? { top_k: model.topK } : {}),
       ...(useClearThinking ? { clear_thinking: false } : {}),
+      ...(useReasoningSplitParam ? { reasoning_split: true } : {}),
       ...(useMaxInputTokens && model.maxInputTokens !== undefined
         ? { max_input_tokens: model.maxInputTokens }
         : {}),

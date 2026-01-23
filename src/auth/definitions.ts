@@ -2,6 +2,7 @@ import { t } from '../i18n';
 import { SecretStore } from '../secret';
 import type { AuthProvider, AuthProviderContext } from './auth-provider';
 import { ApiKeyAuthProvider } from './providers/api-key';
+import { IFlowCliAuthProvider } from './providers/iflow-cli';
 import { AntigravityOAuthProvider } from './providers/antigravity-oauth';
 import { GitHubCopilotAuthProvider } from './providers/github-copilot';
 import { GoogleVertexAIAuthProvider } from './providers/google-vertex-ai-auth';
@@ -47,6 +48,12 @@ export const AUTH_METHODS = {
     label: t('OAuth 2.0'),
     description: t('Authenticate using OAuth 2.0'),
     ctor: OAuth2AuthProvider,
+  },
+  'iflow-cli': {
+    id: 'iflow-cli',
+    label: t('iFlow CLI'),
+    description: t('Authenticate using iFlow OAuth (CLI)'),
+    ctor: IFlowCliAuthProvider,
   },
   'antigravity-oauth': {
     id: 'antigravity-oauth',

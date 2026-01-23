@@ -122,6 +122,13 @@ declare module 'openai/resources/chat/completions' {
      * @see https://inference-docs.cerebras.ai/capabilities/reasoning
      */
     disable_reasoning?: boolean;
+
+    /**
+     * Non-standard thinking toggle supported by some OpenAI-compatible providers.
+     *
+     * Used by iFlow MiniMax models.
+     */
+    reasoning_split?: boolean;
   }
   interface ChatCompletionMessage {
     /**

@@ -222,6 +222,10 @@ export enum FeatureId {
    */
   OpenAIUseClearThinking = 'openai_use-clear-thinking',
   /**
+   * Use `reasoning_split` parameter in OpenAI-compatible Chat Completion APIs.
+   */
+  OpenAIUseReasoningSplitParam = 'openai_use-reasoning-split-param',
+  /**
    * @see https://ai.google.dev/gemini-api/docs/thinking?hl=zh-cn#levels-budgets
    */
   GeminiUseThinkingLevel = 'gemini_use-thinking-level',
@@ -334,7 +338,9 @@ export const FEATURES: Record<FeatureId, Feature> = {
       // Checker for Cerebras GLM 4.7 model:
       (model, provider) =>
         matchProvider(provider.baseUrl, 'api.cerebras.ai') &&
-        matchModelFamily(getBaseModelId(model.id), ['zai-glm-4.7']),
+        matchModelFamily(model.family ?? getBaseModelId(model.id), [
+          'zai-glm-4.7',
+        ]),
     ],
   },
   [FeatureId.OpenAIUseThinkingParam]: {
@@ -377,6 +383,11 @@ export const FEATURES: Record<FeatureId, Feature> = {
       'dashscope-intl.aliyuncs.com',
       'api-inference.modelscope.cn',
     ],
+    customCheckers: [
+      (model, provider) =>
+        matchProvider(provider.baseUrl, 'apis.iflow.cn') &&
+        matchModelFamily(model.family ?? getBaseModelId(model.id), ['glm-']),
+    ],
   },
   [FeatureId.OpenAIUseThinkingBudgetParam]: {
     supportedProviders: [
@@ -405,7 +416,22 @@ export const FEATURES: Record<FeatureId, Feature> = {
       // Checker for Cerebras GLM 4.7 model:
       (model, provider) =>
         matchProvider(provider.baseUrl, 'api.cerebras.ai') &&
-        matchModelFamily(getBaseModelId(model.id), ['zai-glm-4.7']),
+        matchModelFamily(model.family ?? getBaseModelId(model.id), [
+          'zai-glm-4.7',
+        ]),
+      // Checker for iFlow GLM 4.7 model:
+      (model, provider) =>
+        matchProvider(provider.baseUrl, 'apis.iflow.cn') &&
+        matchModelFamily(model.family ?? getBaseModelId(model.id), ['glm-4.7']),
+    ],
+  },
+  [FeatureId.OpenAIUseReasoningSplitParam]: {
+    customCheckers: [
+      (model, provider) =>
+        matchProvider(provider.baseUrl, 'apis.iflow.cn') &&
+        matchModelFamily(model.family ?? getBaseModelId(model.id), [
+          'minimax-',
+        ]),
     ],
   },
   [FeatureId.GeminiUseThinkingLevel]: {

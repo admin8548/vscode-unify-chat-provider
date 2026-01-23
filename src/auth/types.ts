@@ -3,6 +3,7 @@ export type AuthMethod =
   | 'none'
   | 'api-key'
   | 'oauth2'
+  | 'iflow-cli'
   | 'antigravity-oauth'
   | 'google-vertex-ai-auth'
   | 'openai-codex'
@@ -122,6 +123,15 @@ export interface OAuth2AuthConfig {
   oauth: OAuth2Config;
 }
 
+export interface IFlowCliAuthConfig {
+  method: 'iflow-cli';
+  label?: string;
+  description?: string;
+  identityId?: string;
+  token?: string;
+  email?: string;
+}
+
 export interface AntigravityOAuthConfig {
   method: 'antigravity-oauth';
   label?: string;
@@ -220,6 +230,7 @@ export type AuthConfig =
   | NoAuthConfig
   | ApiKeyAuthConfig
   | OAuth2AuthConfig
+  | IFlowCliAuthConfig
   | AntigravityOAuthConfig
   | OpenAICodexAuthConfig
   | GitHubCopilotAuthConfig
