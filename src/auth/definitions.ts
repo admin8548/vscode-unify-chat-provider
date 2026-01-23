@@ -3,6 +3,7 @@ import { SecretStore } from '../secret';
 import type { AuthProvider, AuthProviderContext } from './auth-provider';
 import { ApiKeyAuthProvider } from './providers/api-key';
 import { AntigravityOAuthProvider } from './providers/antigravity-oauth';
+import { GitHubCopilotAuthProvider } from './providers/github-copilot';
 import { GoogleVertexAIAuthProvider } from './providers/google-vertex-ai-auth';
 import { OpenAICodexAuthProvider } from './providers/openai-codex';
 import { OAuth2AuthProvider } from './providers/oauth2';
@@ -64,6 +65,12 @@ export const AUTH_METHODS = {
     label: t('OpenAI CodeX'),
     description: t('Authenticate using OpenAI CodeX OAuth (ChatGPT Plus/Pro)'),
     ctor: OpenAICodexAuthProvider,
+  },
+  'github-copilot': {
+    id: 'github-copilot',
+    label: t('GitHub Copilot'),
+    description: t('Authenticate using GitHub device code flow'),
+    ctor: GitHubCopilotAuthProvider,
   },
 } as const satisfies Record<string, AuthMethodDefinition>;
 

@@ -58,7 +58,11 @@ export class OpenAIResponsesProvider implements ApiProvider {
   protected readonly baseUrl: string;
 
   constructor(protected readonly config: ProviderConfig) {
-    this.baseUrl = buildBaseUrl(config.baseUrl, {
+    this.baseUrl = this.resolveBaseUrl(config);
+  }
+
+  protected resolveBaseUrl(config: ProviderConfig): string {
+    return buildBaseUrl(config.baseUrl, {
       ensureSuffix: '/v1',
       skipSuffixIfMatch: /\/v\d+$/,
     });
@@ -67,6 +71,7 @@ export class OpenAIResponsesProvider implements ApiProvider {
   protected buildHeaders(
     credential?: AuthTokenInfo,
     modelConfig?: ModelConfig,
+    _messages?: readonly LanguageModelChatRequestMessage[],
   ): Record<string, string> {
     const token = getToken(credential);
     const headers = mergeHeaders(
@@ -465,7 +470,7 @@ export class OpenAIResponsesProvider implements ApiProvider {
 
     Object.assign(baseBody, this.config.extraBody, model.extraBody);
 
-    const headers = this.buildHeaders(credential, model);
+    const headers = this.buildHeaders(credential, model, messages);
 
     const client = this.createClient(
       logger,

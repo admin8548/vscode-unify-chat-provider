@@ -7,6 +7,7 @@ import { GoogleAntigravityProvider } from './google/antigravity-client';
 import { GoogleGeminiCLIProvider } from './google/gemini-cli-client';
 import { VertexAIProvider } from './google/vertex-ai-client';
 import { ProviderDefinition } from './interface';
+import { GitHubCopilotProvider } from './github-copilot/client';
 import { OllamaProvider } from './ollama/client';
 import { OpenAIChatCompletionProvider } from './openai/chat-completion-client';
 import { OpenAICodeXProvider } from './openai/codex-client';
@@ -21,6 +22,7 @@ export type ProviderType =
   | 'google-vertex-ai'
   | 'google-antigravity'
   | 'google-gemini-cli'
+  | 'github-copilot'
   | 'openai-chat-completion'
   | 'openai-codex'
   | 'openai-responses'
@@ -62,6 +64,12 @@ export const PROVIDER_TYPES: Record<ProviderType, ProviderDefinition> = {
     label: t('Google Gemini CLI'),
     description: '/v1internal:generateContent',
     class: GoogleGeminiCLIProvider,
+  },
+  'github-copilot': {
+    type: 'github-copilot',
+    label: t('GitHub Copilot'),
+    description: '/chat/completions, /responses',
+    class: GitHubCopilotProvider,
   },
   'openai-chat-completion': {
     type: 'openai-chat-completion',

@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import * as vscode from 'vscode';
 import type { AuthTokenInfo } from '../../auth/types';
 import type { ProviderHttpLogger, RequestLogger } from '../../logger';
-import { DEFAULT_TIMEOUT_CONFIG } from '../../utils';
+import { buildOpencodeUserAgent, DEFAULT_TIMEOUT_CONFIG } from '../../utils';
 import type { ModelConfig, PerformanceTrace } from '../../types';
 import { createCustomFetch, getToken } from '../utils';
 import { OpenAIResponsesProvider } from './responses-client';
@@ -47,10 +47,6 @@ function createOpencodeSessionId(): string {
   return `${OPENCODE_SESSION_ID_PREFIX}${timeBytes.toString('hex')}${randomBase62(
     OPENCODE_SESSION_ID_RANDOM_LENGTH,
   )}`;
-}
-
-function buildOpencodeUserAgent(): string {
-  return `opencode/1.1.28 ai-sdk/provider-utils/3.0.20 runtime/bun/1.3.5`;
 }
 
 function sanitizeCodexHeaders(headersInit: HeadersInit | undefined): Headers {

@@ -49,6 +49,13 @@ export const WELL_KNOWN_PROVIDERS: WellKnownProviderConfig[] = [
     ],
   },
   {
+    name: 'GitHub Copilot',
+    type: 'github-copilot',
+    baseUrl: 'https://api.githubcopilot.com',
+    authTypes: ['github-copilot'],
+    models: [],
+  },
+  {
     name: 'Google AI Studio',
     type: 'google-ai-studio',
     baseUrl: 'https://generativelanguage.googleapis.com',

@@ -5,7 +5,8 @@ export type AuthMethod =
   | 'oauth2'
   | 'antigravity-oauth'
   | 'google-vertex-ai-auth'
-  | 'openai-codex';
+  | 'openai-codex'
+  | 'github-copilot';
 
 export type AuthTokenInfo =
   | { kind: 'none' }
@@ -143,6 +144,19 @@ export interface OpenAICodexAuthConfig {
   email?: string;
 }
 
+export interface GitHubCopilotAuthConfig {
+  method: 'github-copilot';
+  label?: string;
+  description?: string;
+  identityId?: string;
+  token?: string;
+  /**
+   * Enterprise domain (hostname, optional port), e.g. `github.mycompany.com`.
+   * When unset, defaults to `github.com`.
+   */
+  enterpriseUrl?: string;
+}
+
 /**
  * Google Vertex AI authentication sub-type
  */
@@ -208,6 +222,7 @@ export type AuthConfig =
   | OAuth2AuthConfig
   | AntigravityOAuthConfig
   | OpenAICodexAuthConfig
+  | GitHubCopilotAuthConfig
   | GoogleVertexAIAuthConfig;
 
 /**

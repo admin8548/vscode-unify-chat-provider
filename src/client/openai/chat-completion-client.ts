@@ -57,18 +57,23 @@ import { ThinkingBlockMetadata } from '../types';
 import { FeatureId } from '../definitions';
 
 export class OpenAIChatCompletionProvider implements ApiProvider {
-  private readonly baseUrl: string;
+  protected readonly baseUrl: string;
 
-  constructor(private readonly config: ProviderConfig) {
-    this.baseUrl = buildBaseUrl(config.baseUrl, {
+  constructor(protected readonly config: ProviderConfig) {
+    this.baseUrl = this.resolveBaseUrl(config);
+  }
+
+  protected resolveBaseUrl(config: ProviderConfig): string {
+    return buildBaseUrl(config.baseUrl, {
       ensureSuffix: '/v1',
       skipSuffixIfMatch: /\/v\d+$/,
     });
   }
 
-  private buildHeaders(
+  protected buildHeaders(
     credential?: AuthTokenInfo,
     modelConfig?: ModelConfig,
+    _messages?: readonly LanguageModelChatRequestMessage[],
   ): Record<string, string> {
     const token = getToken(credential);
     const headers = mergeHeaders(
@@ -693,7 +698,7 @@ export class OpenAIChatCompletionProvider implements ApiProvider {
     const toolChoice = this.convertToolChoice(options.toolMode, tools);
     const streamEnabled = model.stream ?? true;
 
-    const headers = this.buildHeaders(credential, model);
+    const headers = this.buildHeaders(credential, model, messages);
 
     const baseBody: ChatCompletionCreateParamsBase = {
       model: getBaseModelId(model.id),

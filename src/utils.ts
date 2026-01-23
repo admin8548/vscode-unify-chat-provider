@@ -41,6 +41,11 @@ export const DEFAULT_TIMEOUT_CONFIG = {
   response: 300_000,
 } as const;
 
+export function buildOpencodeUserAgent(): string {
+  // Matches OpenCode's GitHub Copilot / CodeX user-agent style.
+  return 'opencode/1.1.28 ai-sdk/provider-utils/3.0.20 runtime/bun/1.3.5';
+}
+
 export interface RetryConfig {
   maxRetries?: number;
   initialDelayMs?: number;
