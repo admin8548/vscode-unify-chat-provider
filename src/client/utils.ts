@@ -119,11 +119,11 @@ export function matchProvider(url: string, pattern: ProviderPattern): boolean {
 }
 
 export function matchModelId(id: string, patterns: string[]): boolean {
-  return patterns.some((v) => id.startsWith(v));
+  return patterns.some((v) => id.toLowerCase().startsWith(v.toLowerCase()));
 }
 
 export function matchModelFamily(family: string, patterns: string[]): boolean {
-  return patterns.some((v) => family.startsWith(v));
+  return patterns.some((v) => family.toLowerCase().startsWith(v.toLowerCase()));
 }
 
 const EXTENSION_ID = 'SmallMain.vscode-unify-chat-provider';

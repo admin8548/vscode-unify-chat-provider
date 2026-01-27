@@ -370,6 +370,18 @@ export const FEATURES: Record<FeatureId, Feature> = {
       'open.bigmodel.cn',
       'api.z.ai',
     ],
+    customCheckers: [
+      // Checker for iFlow GLM models:
+      (model, provider) =>
+        matchProvider(provider.baseUrl, 'apis.iflow.cn') &&
+        matchModelFamily(model.family ?? getBaseModelId(model.id), ['glm-']),
+      // Checker for Nvidia GLM models:
+      (model, provider) =>
+        matchProvider(provider.baseUrl, 'integrate.api.nvidia.com') &&
+        matchModelFamily(model.family ?? getBaseModelId(model.id), [
+          'z-ai/glm',
+        ]),
+    ],
   },
   [FeatureId.OpenAIUseThinkingParam2]: {
     supportedProviders: [
@@ -403,11 +415,6 @@ export const FEATURES: Record<FeatureId, Feature> = {
       'dashscope-intl.aliyuncs.com',
       'api-inference.modelscope.cn',
     ],
-    customCheckers: [
-      (model, provider) =>
-        matchProvider(provider.baseUrl, 'apis.iflow.cn') &&
-        matchModelFamily(model.family ?? getBaseModelId(model.id), ['glm-']),
-    ],
   },
   [FeatureId.OpenAIUseThinkingBudgetParam]: {
     supportedProviders: [
@@ -429,6 +436,18 @@ export const FEATURES: Record<FeatureId, Feature> = {
       'dashscope-intl.aliyuncs.com',
       'api-inference.modelscope.cn',
     ],
+    customCheckers: [
+      // Checker for iFlow GLM models:
+      (model, provider) =>
+        matchProvider(provider.baseUrl, 'apis.iflow.cn') &&
+        matchModelFamily(model.family ?? getBaseModelId(model.id), ['glm-']),
+      // Checker for Nvidia GLM models:
+      (model, provider) =>
+        matchProvider(provider.baseUrl, 'integrate.api.nvidia.com') &&
+        matchModelFamily(model.family ?? getBaseModelId(model.id), [
+          'z-ai/glm',
+        ]),
+    ],
   },
   [FeatureId.OpenAIUseClearThinking]: {
     supportedProviders: ['open.bigmodel.cn', 'api.z.ai'],
@@ -443,14 +462,27 @@ export const FEATURES: Record<FeatureId, Feature> = {
       (model, provider) =>
         matchProvider(provider.baseUrl, 'apis.iflow.cn') &&
         matchModelFamily(model.family ?? getBaseModelId(model.id), ['glm-4.7']),
+      // Checker for Nvidia GLM 4.7 model:
+      (model, provider) =>
+        matchProvider(provider.baseUrl, 'integrate.api.nvidia.com') &&
+        matchModelFamily(model.family ?? getBaseModelId(model.id), [
+          'z-ai/glm4.7',
+        ]),
     ],
   },
   [FeatureId.OpenAIUseReasoningSplitParam]: {
     customCheckers: [
+      // Checker for iFlow Minimax models:
       (model, provider) =>
         matchProvider(provider.baseUrl, 'apis.iflow.cn') &&
         matchModelFamily(model.family ?? getBaseModelId(model.id), [
           'minimax-',
+        ]),
+      // Checker for Nvidia Minimax models:
+      (model, provider) =>
+        matchProvider(provider.baseUrl, 'integrate.api.nvidia.com') &&
+        matchModelFamily(model.family ?? getBaseModelId(model.id), [
+          'minimaxai/minimax-',
         ]),
     ],
   },
