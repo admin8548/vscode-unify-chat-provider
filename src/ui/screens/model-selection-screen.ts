@@ -36,6 +36,8 @@ async function showModelSelectionPicker(
     const qp = vscode.window.createQuickPick<ModelSelectionItem>();
     qp.title = route.title;
     qp.placeholder = t('Loading models...');
+    qp.matchOnDescription = true;
+    qp.matchOnDetail = true;
     qp.canSelectMany = true;
     qp.ignoreFocusOut = true;
     qp.busy = true;
@@ -185,9 +187,11 @@ async function showModelSelectionPicker(
       }
 
       vscode.window.showInformationMessage(
-        t('Added {0} model(s): {1}', selectedModels.length, selectedModels
-          .map((m) => m.name || m.id)
-          .join(', ')),
+        t(
+          'Added {0} model(s): {1}',
+          selectedModels.length,
+          selectedModels.map((m) => m.name || m.id).join(', '),
+        ),
       );
 
       qp.hide();
