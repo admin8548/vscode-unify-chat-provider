@@ -47,6 +47,8 @@ Unify Chat Provider
   - [添加 Gemini CLI / Antigravity 账号](#添加-gemini-cli--antigravity-账号)
 - **部分免费的 Claude、GPT、Gemini、Grok 等系列模型**：
   - [添加 GitHub Copilot 账号](#添加-github-copilot-账号)
+- **免费的 Kimi K2.5、GLM 4.7、MiniMax M2.1 等系列模型**：
+  - [添加 Nvidia 账号](#添加-nvidia-账号)
 - **免费的 GLM 4.7、Kimi K2、Qwen3、DeepSeek 等系列模型**：
   - [添加 iFlow API Key 或 CLI 账号](#添加-iflow-api-key-或-cli-账号)
 - 更多食谱：
@@ -99,6 +101,19 @@ VS Code 的 Copilot Chat 本身就支持登录 GitHub Copilot 账号，所以一
 2. 在列表中选择 `Github Copilot`，视你的账号是否为企业订阅选择 `Github.com` 或者 `Github Enterprise`。
 3. 允许扩展打开浏览器进行授权登录，在浏览器中登录你的账号。
 4. 登录完成后返回 VS Code，点击配置界面最下方的 `保存` 按钮完成。
+
+</details>
+
+#### 添加 Nvidia 账号
+
+<details>
+
+0. 你需要准备一个 Nvidia 账号。
+1. 打开 VS Code 命令面板，搜索 `Unify Chat Provider: 从内置供应商列表添加供应商`。
+2. 在列表中选择 `Nvidia`，填写在用户面板生成的 API Key 并回车。
+3. 点击配置界面最下方的 `保存` 按钮完成。
+
+> 如果你需要用 Kimi K2.5 模型，请从内置模型列表中添加，官方 API 可能暂未返回该模型信息。
 
 </details>
 

@@ -1216,6 +1216,14 @@ const _WELL_KNOWN_MODELS = [
   },
   {
     id: 'kimi-k2.5',
+    overrides: [
+      {
+        matchers: ['integrate.api.nvidia.com'],
+        config: {
+          id: 'moonshotai/kimi-k2.5',
+        },
+      },
+    ],
     name: 'Kimi K2.5',
     maxInputTokens: 262144,
     maxOutputTokens: 128000,
