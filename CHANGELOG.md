@@ -1,5 +1,10 @@
 # Changelog
 
+## v4.2.1 - 2026-01-29
+
+### Fixes
+- codex don't support maxOutputTokens (dbb64cf, SmallMain)
+
 ## v4.2.0 - 2026-01-29
 
 ### Features
