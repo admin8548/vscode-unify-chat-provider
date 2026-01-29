@@ -1,5 +1,15 @@
 # Changelog
 
+## v4.2.0 - 2026-01-29
+
+### Features
+- enhance model configuration with default parameters in OllamaProvider (ef41977, SmallMain)
+- add Ollama Cloud free quota infomation in README files (c2b4007, SmallMain)
+- add Qwen 3 Max Thinking model support (5d44f96, SmallMain)
+
+### Chores
+- update roadmap (77e557d, SmallMain)
+
 ## v4.1.1 - 2026-01-28
 
 ### Fixes
