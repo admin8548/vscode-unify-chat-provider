@@ -778,9 +778,19 @@ export class OllamaProvider implements ApiProvider {
 
     try {
       const list = await client.list();
-      const result = list.models.map((model) => ({
-        id: model.name,
-      }));
+      const result = list.models.map(
+        (model) =>
+          ({
+            id: model.name,
+            maxInputTokens: undefined,
+            maxOutputTokens: undefined,
+            temperature: undefined,
+            topP: undefined,
+            topK: undefined,
+            frequencyPenalty: undefined,
+            presencePenalty: undefined,
+          }) satisfies ModelConfig,
+      );
       return result;
     } catch (error) {
       logger.error(error);

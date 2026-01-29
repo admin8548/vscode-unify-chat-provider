@@ -3063,14 +3063,10 @@ export function mergeWithWellKnownModel(
 ): ModelConfig {
   const wellKnown = findBestMatchingWellKnownModel(apiModel.id);
 
-  const filteredApiModel = Object.fromEntries(
-    Object.entries(apiModel).filter(([, value]) => value !== undefined),
-  ) as ModelConfig;
-
   const defaultCapabilities = { capabilities: { toolCalling: true } };
 
   if (!wellKnown) {
-    return Object.assign(defaultCapabilities, filteredApiModel);
+    return Object.assign(defaultCapabilities, apiModel);
   }
 
   const { overrides: _overrides, ...wellKnownBase } = wellKnown;
@@ -3084,7 +3080,7 @@ export function mergeWithWellKnownModel(
     }
   }
 
-  return Object.assign(defaultCapabilities, baseConfig, filteredApiModel);
+  return Object.assign(defaultCapabilities, baseConfig, apiModel);
 }
 
 /**
