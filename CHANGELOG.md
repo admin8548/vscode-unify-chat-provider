@@ -1,5 +1,13 @@
 # Changelog
 
+## v4.3.0 - 2026-01-30
+
+### Fixes
+- auth: update labels for Google Antigravity in OAuth provider (4945bcf, SmallMain)
+- gemini-cli: implement independent OAuth flow and fix API request format (d9bf8ed, moss)
+- antigravity: update User-Agent version to 1.15.8 (d4a73de, moss)
+- remove unnecessary thinking configuration from doubao-seed-code (749d6a8, SmallMain)
+
 ## v4.2.1 - 2026-01-29
 
 ### Fixes
