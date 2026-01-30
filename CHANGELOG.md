@@ -1,5 +1,11 @@
 # Changelog
 
+## v4.3.1 - 2026-01-30
+
+### Fixes
+- simplify usage parameter handling in sharedProcessUsage and processUsage functions (30b7301, SmallMain)
+- models: add new model IDs to OpenCode Zen provider (7e2091a, SmallMain)
+
 ## v4.3.0 - 2026-01-30
 
 ### Fixes
