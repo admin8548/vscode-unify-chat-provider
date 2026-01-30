@@ -1213,6 +1213,7 @@ const _WELL_KNOWN_MODELS = [
   {
     id: 'kimi-k2.5',
     overrides: [
+      'kimi-k2.5-free',
       {
         matchers: ['integrate.api.nvidia.com'],
         config: {

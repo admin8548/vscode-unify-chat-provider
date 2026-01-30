@@ -135,7 +135,7 @@ export const WELL_KNOWN_PROVIDERS: WellKnownProviderConfig[] = [
     type: 'openai-chat-completion',
     baseUrl: 'https://opencode.ai/zen',
     authTypes: ['api-key'],
-    models: ['grok-code', 'big-pickle'],
+    models: ['big-pickle', 'glm-4.7-free', 'kimi-k2.5-free'],
   },
   {
     name: 'OpenCode Zen (OpenAI Responses)',
@@ -143,7 +143,7 @@ export const WELL_KNOWN_PROVIDERS: WellKnownProviderConfig[] = [
     type: 'openai-responses',
     baseUrl: 'https://opencode.ai/zen',
     authTypes: ['api-key'],
-    models: [],
+    models: ['gpt-5-nano'],
   },
   {
     name: 'OpenCode Zen (Anthropic Messages)',
@@ -151,7 +151,7 @@ export const WELL_KNOWN_PROVIDERS: WellKnownProviderConfig[] = [
     type: 'anthropic',
     baseUrl: 'https://opencode.ai/zen',
     authTypes: ['api-key'],
-    models: [],
+    models: ['minimax-m2.1-free'],
   },
   {
     name: 'OpenCode Zen (Gemini)',
