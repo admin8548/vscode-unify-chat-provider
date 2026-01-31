@@ -161,6 +161,8 @@ export interface GeminiCliOAuthConfig {
   description?: string;
   identityId?: string;
   token?: string;
+  /** Optional user-provided project id (duetProject). Used as fallback when managedProjectId is unavailable. */
+  projectId?: string;
   /** Cloud Code Assist managed project id (cloudaicompanionProject) */
   managedProjectId?: string;
   tier?: 'free' | 'paid';

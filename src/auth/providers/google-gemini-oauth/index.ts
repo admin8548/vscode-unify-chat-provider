@@ -45,6 +45,7 @@ function toPersistableConfig(
     description: config?.description,
     identityId: config?.identityId,
     token: config?.token,
+    projectId: config?.projectId,
     managedProjectId: config?.managedProjectId,
     tier: config?.tier,
     tierId: config?.tierId,
@@ -204,8 +205,16 @@ export class GeminiCliOAuthProvider implements AuthProvider {
   }
 
   private async persistConfig(next: GeminiCliOAuthConfig): Promise<void> {
-    this.config = next;
-    await this.context.persistAuthConfig?.(next);
+    if (this.config) {
+      // Preserve object identity so existing ProviderConfig/client instances
+      // observe updates (e.g. managedProjectId provisioning) without requiring
+      // a full reload.
+      Object.assign(this.config, next);
+    } else {
+      this.config = next;
+    }
+
+    await this.context.persistAuthConfig?.(this.config);
   }
 
   private async resolveTokenData(): Promise<OAuth2TokenData | null> {
@@ -219,6 +228,61 @@ export class GeminiCliOAuthProvider implements AuthProvider {
     }
 
     return GeminiCliOAuthProvider.parseTokenData(raw);
+  }
+
+  private async refreshAccountInfoIfNeeded(accessToken: string): Promise<void> {
+    const config = this.config;
+    if (!config) {
+      return;
+    }
+
+    const shouldRefreshAccountInfo =
+      !config.tier || !config.tierId || !config.managedProjectId?.trim();
+
+    if (!shouldRefreshAccountInfo) {
+      return;
+    }
+
+    authLog.verbose(
+      `${this.context.providerId}:google-gemini-oauth`,
+      'Refreshing account info (managedProjectId/tier)',
+    );
+
+    try {
+      const accountInfo = await fetchGeminiCliAccountInfo(
+        accessToken,
+        config.projectId,
+      );
+      const updates: Partial<GeminiCliOAuthConfig> = {};
+
+      if (
+        !config.managedProjectId?.trim() &&
+        accountInfo.managedProjectId?.trim()
+      ) {
+        updates.managedProjectId = accountInfo.managedProjectId.trim();
+      }
+
+      if (!config.tier || config.tier !== accountInfo.tier) {
+        updates.tier = accountInfo.tier;
+      }
+
+      if (!config.tierId || config.tierId !== accountInfo.tierId) {
+        updates.tierId = accountInfo.tierId;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await this.persistConfig({
+          ...toPersistableConfig(config),
+          ...updates,
+        });
+      }
+    } catch (error) {
+      authLog.error(
+        `${this.context.providerId}:google-gemini-oauth`,
+        'Failed to refresh account info (managedProjectId/tier)',
+        error,
+      );
+    }
   }
 
   async getStatusSnapshot(): Promise<AuthUiStatusSnapshot> {
@@ -377,6 +441,7 @@ export class GeminiCliOAuthProvider implements AuthProvider {
       `${this.context.providerId}:google-gemini-oauth`,
       `Credential obtained (expires: ${token.expiresAt ? new Date(token.expiresAt).toISOString() : 'never'})`,
     );
+    await this.refreshAccountInfoIfNeeded(token.accessToken);
     return {
       value: token.accessToken,
       tokenType: token.tokenType,
@@ -406,6 +471,17 @@ export class GeminiCliOAuthProvider implements AuthProvider {
       `${this.context.providerId}:google-gemini-oauth`,
       'Starting Gemini CLI OAuth configuration',
     );
+
+    const projectId =
+      this.config?.projectId?.trim() ??
+      (
+        await vscode.window.showInputBox({
+          title: t('Project ID (optional)'),
+          prompt: t('enter Project ID (leave empty to auto-detect)'),
+          ignoreFocusOut: true,
+        })
+      )?.trim() ??
+      '';
 
     authLog.verbose(
       `${this.context.providerId}:google-gemini-oauth`,
@@ -476,7 +552,10 @@ export class GeminiCliOAuthProvider implements AuthProvider {
     );
 
     // Fetch account info to get tier and managed project
-    const accountInfo = await fetchGeminiCliAccountInfo(exchanged.accessToken);
+    const accountInfo = await fetchGeminiCliAccountInfo(
+      exchanged.accessToken,
+      projectId || undefined,
+    );
 
     authLog.verbose(
       `${this.context.providerId}:google-gemini-oauth`,
@@ -496,6 +575,7 @@ export class GeminiCliOAuthProvider implements AuthProvider {
       description: this.config?.description,
       identityId: randomUUID(),
       token: tokenRef,
+      projectId: projectId || undefined,
       managedProjectId: accountInfo.managedProjectId,
       tier: accountInfo.tier,
       tierId: accountInfo.tierId,

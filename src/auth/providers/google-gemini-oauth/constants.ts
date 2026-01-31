@@ -54,6 +54,18 @@ export const GEMINI_CLI_API_HEADERS = {
 } as const;
 
 /**
+ * Headers used for Code Assist account provisioning endpoints (loadCodeAssist/onboardUser).
+ *
+ * Empirically, these endpoints are more reliable with Cloud SDK-style headers and
+ * JSON client metadata, even for Gemini CLI OAuth.
+ */
+export const GEMINI_CLI_CODE_ASSIST_PROVISION_HEADERS = {
+  'X-Goog-Api-Client': 'google-cloud-sdk vscode_cloudshelleditor/0.1',
+  'Client-Metadata':
+    '{"ideType":"IDE_UNSPECIFIED","platform":"PLATFORM_UNSPECIFIED","pluginType":"GEMINI"}',
+} as const;
+
+/**
  * Randomized header pools for Gemini CLI API requests.
  * Used to vary headers slightly across requests.
  */
@@ -99,6 +111,23 @@ export function getGeminiCliRandomizedHeaders(): GeminiCliApiHeaderSet {
     'X-Goog-Api-Client': randomFrom(GEMINI_CLI_API_HEADERS_POOL['X-Goog-Api-Client']),
     'Client-Metadata': GEMINI_CLI_API_HEADERS['Client-Metadata'],
   };
+}
+
+export function buildGeminiCliCodeAssistMetadata(
+  projectId?: string,
+): Record<string, string> {
+  const metadata: Record<string, string> = {
+    ideType: 'IDE_UNSPECIFIED',
+    platform: 'PLATFORM_UNSPECIFIED',
+    pluginType: 'GEMINI',
+  };
+
+  const trimmed = projectId?.trim();
+  if (trimmed) {
+    metadata['duetProject'] = trimmed;
+  }
+
+  return metadata;
 }
 
 /**

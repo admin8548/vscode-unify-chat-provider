@@ -13,6 +13,8 @@ import {
   GEMINI_CLI_ENDPOINT,
   GEMINI_CLI_ENDPOINT_FALLBACKS,
   GEMINI_CLI_API_HEADERS,
+  GEMINI_CLI_CODE_ASSIST_PROVISION_HEADERS,
+  buildGeminiCliCodeAssistMetadata,
   GOOGLE_OAUTH_AUTH_URL,
   GOOGLE_OAUTH_TOKEN_URL,
   GOOGLE_USERINFO_URL,
@@ -37,6 +39,18 @@ function extractManagedProjectId(value: unknown): string {
   }
   if (isRecord(value) && typeof value['id'] === 'string') {
     return value['id'].trim();
+  }
+  return '';
+}
+
+function extractManagedProjectIdFromPayload(payload: Record<string, unknown>): string {
+  const direct = extractManagedProjectId(payload['cloudaicompanionProject']);
+  if (direct) {
+    return direct;
+  }
+  const nested = payload['response'];
+  if (isRecord(nested)) {
+    return extractManagedProjectId(nested['cloudaicompanionProject']);
   }
   return '';
 }
@@ -273,6 +287,7 @@ async function fetchWithTimeout(
  */
 export async function fetchGeminiCliAccountInfo(
   accessToken: string,
+  projectId?: string,
 ): Promise<GeminiCliAccountInfo> {
   authLog.verbose('gemini-cli-oauth', 'Fetching account info');
   const randomized = getGeminiCliRandomizedHeaders();
@@ -280,15 +295,11 @@ export async function fetchGeminiCliAccountInfo(
     Authorization: `Bearer ${accessToken}`,
     'Content-Type': 'application/json',
     'User-Agent': randomized['User-Agent'],
-    'X-Goog-Api-Client': randomized['X-Goog-Api-Client'],
-    'Client-Metadata': randomized['Client-Metadata'],
+    'X-Goog-Api-Client': GEMINI_CLI_CODE_ASSIST_PROVISION_HEADERS['X-Goog-Api-Client'],
+    'Client-Metadata': GEMINI_CLI_CODE_ASSIST_PROVISION_HEADERS['Client-Metadata'],
   };
 
-  const metadata = {
-    ideType: 'IDE_UNSPECIFIED',
-    platform: 'PLATFORM_UNSPECIFIED',
-    pluginType: 'GEMINI',
-  };
+  const metadata = buildGeminiCliCodeAssistMetadata(projectId);
 
   let detectedTier: GeminiCliTier = 'free';
   let tierId: string | undefined;
@@ -318,7 +329,7 @@ export async function fetchGeminiCliAccountInfo(
       }
 
       managedProjectId =
-        extractManagedProjectId(data['cloudaicompanionProject']) || undefined;
+        extractManagedProjectIdFromPayload(data) || undefined;
       tierId = extractTierId(data);
       const defaultTierId = extractDefaultTierId(data['allowedTiers']);
       const effectiveTierId =
@@ -367,6 +378,10 @@ export async function fetchGeminiCliAccountInfo(
             headers: {
               ...headers,
               ...getGeminiCliRandomizedHeaders(),
+              'X-Goog-Api-Client':
+                GEMINI_CLI_CODE_ASSIST_PROVISION_HEADERS['X-Goog-Api-Client'],
+              'Client-Metadata':
+                GEMINI_CLI_CODE_ASSIST_PROVISION_HEADERS['Client-Metadata'],
             },
             body: onboardRequestBody,
           },

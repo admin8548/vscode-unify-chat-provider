@@ -1171,9 +1171,12 @@ export abstract class GoogleCodeAssistProvider extends GoogleAIStudioProvider {
       if (managedProjectId) {
         return managedProjectId;
       }
-      const projectId = (auth as any).projectId?.trim();
-      if (projectId) {
-        return projectId;
+
+      if (auth.method === 'antigravity-oauth') {
+        const projectId = auth.projectId?.trim();
+        if (projectId) {
+          return projectId;
+        }
       }
     }
 
@@ -1928,8 +1931,14 @@ export abstract class GoogleCodeAssistProvider extends GoogleAIStudioProvider {
             }
 
             const text = await attemptResponse.text().catch(() => '');
-            const debugProjectId = (body as any).project;
-            const projectInfo = debugProjectId ? ` (project: ${debugProjectId})` : '';
+            const debugProjectIdValue = body['project'];
+            const debugProjectId =
+              typeof debugProjectIdValue === 'string'
+                ? debugProjectIdValue.trim()
+                : '';
+            const projectInfo = debugProjectId
+              ? ` (project: ${debugProjectId})`
+              : '';
             lastError = new Error(
               `${this.codeAssistName} request failed (${attemptResponse.status})${projectInfo}: ${
                 text || attemptResponse.statusText || 'Unknown error'

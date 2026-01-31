@@ -36,6 +36,10 @@ export class GoogleGeminiCLIProvider extends GoogleCodeAssistProvider {
       if (managedProjectId) {
         return managedProjectId;
       }
+      const projectId = auth.projectId?.trim();
+      if (projectId) {
+        return projectId;
+      }
     }
     // Do not fallback to default ID, return empty string to trigger validation error later
     return '';
