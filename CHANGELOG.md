@@ -1,5 +1,17 @@
 # Changelog
 
+## v4.3.3 - 2026-02-01
+
+### Fixes
+- handle potential null blocks in message content processing (a425881, SmallMain)
+
+### Refactors
+- replace custom PKCE generation with utility function for consistency (9e12c9e, SmallMain)
+- auth: simplify state generation and improve system prompt handling (e920042, SmallMain)
+
+### Chores
+- added a tutorial on how to add a Project using the Gemini CLI (43d0626, SmallMain)
+
 ## v4.3.2 - 2026-01-31
 
 ### Features
