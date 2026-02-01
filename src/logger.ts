@@ -766,6 +766,34 @@ export const authLog = {
   },
 };
 
+/**
+ * Global migration log function for provider migration operations.
+ * Always logs regardless of verbose setting.
+ */
+export const migrationLog = {
+  info(source: string, message: string, data?: unknown): void {
+    const ch = getChannel();
+    if (data !== undefined) {
+      ch.info(`[Migration:${source}] ${message}: ${stringifyForLog(data)}`);
+    } else {
+      ch.info(`[Migration:${source}] ${message}`);
+    }
+  },
+  error(source: string, message: string, error?: unknown): void {
+    const ch = getChannel();
+    if (error !== undefined) {
+      ch.error(`[Migration:${source}] ${message}:`);
+      ch.error(error instanceof Error ? error : String(error));
+    } else {
+      ch.error(`[Migration:${source}] ${message}`);
+    }
+  },
+  warn(source: string, message: string): void {
+    const ch = getChannel();
+    ch.warn(`[Migration:${source}] ${message}`);
+  },
+};
+
 if (isVerboseEnabled()) {
   getChannel().info('Initialized.');
 }

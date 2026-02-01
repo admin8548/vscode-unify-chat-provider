@@ -7,6 +7,7 @@ import type {
   ProviderMigrationCandidate,
   ProviderMigrationSource,
 } from './types';
+import { migrationLog } from '../logger';
 
 export type {
   ProviderMigrationCandidate,
@@ -31,6 +32,8 @@ export async function importProvidersFromConfigFile(options: {
   configFilePath: string;
 }): Promise<readonly ProviderMigrationCandidate[]> {
   const filePath = normalizeConfigFilePathInput(options.configFilePath);
+  migrationLog.info(options.source.id, `Reading config file: ${filePath}`);
   const content = await fs.readFile(filePath, 'utf-8');
+  migrationLog.info(options.source.id, 'Config file content', content);
   return options.source.importFromConfigContent(content);
 }

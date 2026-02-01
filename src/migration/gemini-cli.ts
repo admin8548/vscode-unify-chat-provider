@@ -15,6 +15,7 @@ import {
 } from '../well-known/models';
 import { t } from '../i18n';
 import type { ModelConfig, ProviderConfig } from '../types';
+import { migrationLog } from '../logger';
 
 const GEMINI_CLI_DEFAULT_MODEL_IDS: WellKnownModelId[] = [
   'gemini-3-pro-preview',
@@ -325,7 +326,23 @@ export const geminiCliMigrationSource: ProviderMigrationSource = {
   async importFromConfigContent(
     content: string,
   ): Promise<readonly ProviderMigrationCandidate[]> {
+    migrationLog.info('gemini-cli', 'Parsing config content');
     const env = extractGeminiCliEnv(content);
-    return [buildGeminiCliProvider(env)];
+    migrationLog.info('gemini-cli', 'Extracted environment variables', {
+      ...env,
+      GEMINI_API_KEY: env['GEMINI_API_KEY'] ? '***' : undefined,
+      GOOGLE_API_KEY: env['GOOGLE_API_KEY'] ? '***' : undefined,
+      GOOGLE_APPLICATION_CREDENTIALS: env['GOOGLE_APPLICATION_CREDENTIALS']
+        ? '***'
+        : undefined,
+    });
+    const candidate = buildGeminiCliProvider(env);
+    migrationLog.info('gemini-cli', 'Built provider candidate', {
+      type: candidate.provider.type,
+      name: candidate.provider.name,
+      baseUrl: candidate.provider.baseUrl,
+      modelsCount: candidate.provider.models?.length,
+    });
+    return [candidate];
   },
 };

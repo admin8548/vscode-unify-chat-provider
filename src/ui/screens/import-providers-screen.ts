@@ -18,6 +18,7 @@ import type {
   UiNavAction,
   UiResume,
 } from '../router/types';
+import { migrationLog } from '../../logger';
 import { promises as fs } from 'fs';
 import { t } from '../../i18n';
 
@@ -312,6 +313,8 @@ async function importProvidersFromContent(
   content: string,
 ): Promise<UiNavAction> {
   try {
+    migrationLog.info(source.id, 'Importing from pasted content');
+    migrationLog.info(source.id, 'Config content', content);
     const candidates = await source.importFromConfigContent(content);
     return handleImportCandidates(ctx, source.displayName, candidates);
   } catch (error) {

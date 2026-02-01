@@ -17,6 +17,7 @@ import {
 } from '../well-known/models';
 import { t } from '../i18n';
 import type { ModelConfig, ProviderConfig } from '../types';
+import { migrationLog } from '../logger';
 
 const CODEX_DEFAULT_MODEL_IDS: WellKnownModelId[] = [
   'gpt-5.2-codex',
@@ -81,7 +82,9 @@ async function readAuthJsonApiKey(): Promise<string | undefined> {
     const content = await fs.readFile(authJsonPath, 'utf-8');
     const parsed = JSON.parse(content);
     const apiKey = parsed?.OPENAI_API_KEY;
-    return typeof apiKey === 'string' && apiKey.trim() ? apiKey.trim() : undefined;
+    return typeof apiKey === 'string' && apiKey.trim()
+      ? apiKey.trim()
+      : undefined;
   } catch {
     return undefined;
   }
@@ -271,6 +274,7 @@ export const codexMigrationSource: ProviderMigrationSource = {
   async importFromConfigContent(
     content: string,
   ): Promise<readonly ProviderMigrationCandidate[]> {
+    migrationLog.info('codex', 'Parsing config content');
     let parsed: unknown;
     try {
       parsed = toml.parse(content);
@@ -283,6 +287,14 @@ export const codexMigrationSource: ProviderMigrationSource = {
       throw new Error(t('Codex config.toml must be a TOML table/object.'));
     }
 
-    return [await buildCodexProviderFromToml(parsed)];
+    migrationLog.info('codex', 'Parsed TOML config', parsed);
+    const candidate = await buildCodexProviderFromToml(parsed);
+    migrationLog.info('codex', 'Built provider candidate', {
+      type: candidate.provider.type,
+      name: candidate.provider.name,
+      baseUrl: candidate.provider.baseUrl,
+      modelsCount: candidate.provider.models?.length,
+    });
+    return [candidate];
   },
 };

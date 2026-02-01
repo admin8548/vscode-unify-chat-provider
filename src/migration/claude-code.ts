@@ -15,6 +15,7 @@ import {
 } from '../well-known/models';
 import { t } from '../i18n';
 import type { ModelConfig, ProviderConfig } from '../types';
+import { migrationLog } from '../logger';
 
 const CLAUDE_CODE_DEFAULT_MODEL_IDS: WellKnownModelId[] = [
   'claude-sonnet-4-5',
@@ -193,7 +194,7 @@ function extractClaudeCodeSettings(content: string): {
   );
 
   const baseUrl = baseUrlRaw
-    ? normalizeUrlCandidate(baseUrlRaw) ?? baseUrlRaw
+    ? (normalizeUrlCandidate(baseUrlRaw) ?? baseUrlRaw)
     : undefined;
   const apiKey = apiKeyRaw?.trim() || undefined;
   const modelId = modelIdRaw?.trim() || undefined;
@@ -213,7 +214,10 @@ function buildClaudeCodeProvider(
     if (!baseUrl) missing.push('URL');
     if (!apiKey) missing.push('TOKEN/APIKEY');
     throw new Error(
-      t('Claude Code config is missing required field(s): {0}', missing.join(', ')),
+      t(
+        'Claude Code config is missing required field(s): {0}',
+        missing.join(', '),
+      ),
     );
   }
 
@@ -309,7 +313,21 @@ export const claudeCodeMigrationSource: ProviderMigrationSource = {
   async importFromConfigContent(
     content: string,
   ): Promise<readonly ProviderMigrationCandidate[]> {
+    migrationLog.info('claude-code', 'Parsing config content');
     const settings = extractClaudeCodeSettings(content);
-    return [buildClaudeCodeProvider(settings)];
+    migrationLog.info('claude-code', 'Extracted settings', {
+      baseUrl: settings.baseUrl,
+      apiKey: settings.apiKey ? '***' : undefined,
+      modelId: settings.modelId,
+      providerName: settings.providerName,
+    });
+    const candidate = buildClaudeCodeProvider(settings);
+    migrationLog.info('claude-code', 'Built provider candidate', {
+      type: candidate.provider.type,
+      name: candidate.provider.name,
+      baseUrl: candidate.provider.baseUrl,
+      modelsCount: candidate.provider.models?.length,
+    });
+    return [candidate];
   },
 };
