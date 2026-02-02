@@ -1,5 +1,24 @@
 # Changelog
 
+## v4.4.0 - 2026-02-02
+
+### Features
+- add StepFun provider support (b4449c2, SmallMain)
+- add Gitee AI provider support (def6fa1, SmallMain)
+- add Siliconflow provider support (ef6abfe, SmallMain)
+- ui: handle ClaudeCodeOAuthDetectedError in import screen (b4a1f00, SmallMain)
+- migration: add ClaudeCodeOAuthDetectedError for OAuth detection (f6158b0, SmallMain)
+
+### Fixes
+- auth flow improvements (c45d431, SmallMain)
+
+### Refactors
+- migration: CodeX and Gemini CLI (4e7b659, SmallMain)
+- migration: use WellKnown Provider for default models instead of hardcoded list (0c63174, SmallMain)
+- migration: update claude-code provider building with WellKnown integration (a464536, SmallMain)
+- migration: rewrite claude-code config parsing with exact key matching (2dd4613, SmallMain)
+- migration: simplify claude-code config file detection (8ebe7ec, SmallMain)
+
 ## v4.3.5 - 2026-02-02
 
 ### Features
