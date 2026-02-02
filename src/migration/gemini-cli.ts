@@ -4,86 +4,22 @@ import type {
   ProviderMigrationCandidate,
   ProviderMigrationSource,
 } from './types';
-import {
-  firstExistingFilePath,
-  normalizeConfigFilePathInput,
-} from './fs-utils';
-import {
-  WELL_KNOWN_MODELS,
-  WellKnownModelId,
-  normalizeWellKnownConfigs,
-} from '../well-known/models';
+import { firstExistingFilePath } from './fs-utils';
+import { WELL_KNOWN_PROVIDERS, resolveProviderModels } from '../well-known/providers';
 import { t } from '../i18n';
-import type { ModelConfig, ProviderConfig } from '../types';
+import type { ProviderConfig } from '../types';
+import type {
+  GoogleVertexAIAdcConfig,
+  GoogleVertexAIApiKeyConfig,
+  GoogleVertexAIServiceAccountConfig,
+} from '../auth/types';
 import { migrationLog } from '../logger';
-
-const GEMINI_CLI_DEFAULT_MODEL_IDS: WellKnownModelId[] = [
-  'gemini-3-pro-preview',
-  'gemini-3-flash-preview',
-  'gemini-2.5-pro',
-  'gemini-2.5-flash',
-] as const;
-
-function getGeminiCliDefaultModels(provider: ProviderConfig): ModelConfig[] {
-  const models: (typeof WELL_KNOWN_MODELS)[number][] = [];
-  for (const id of GEMINI_CLI_DEFAULT_MODEL_IDS) {
-    const model = WELL_KNOWN_MODELS.find((m) => m.id === id);
-    if (!model) {
-      throw new Error(t('Well-known model not found: {0}', id));
-    }
-    models.push(model);
-  }
-  return normalizeWellKnownConfigs(models, undefined, provider);
-}
+import { GeminiCliOAuthDetectedError } from './errors';
 
 function getString(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;
-}
-
-function isObjectRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-type StringEntry = { key: string; value: string };
-
-function collectStringEntries(
-  value: unknown,
-  out: StringEntry[],
-  options: { maxDepth: number },
-  depth = 0,
-  seen = new Set<object>(),
-): void {
-  if (depth > options.maxDepth) return;
-
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      collectStringEntries(item, out, options, depth + 1, seen);
-    }
-    return;
-  }
-
-  if (!isObjectRecord(value)) return;
-  if (seen.has(value)) return;
-  seen.add(value);
-
-  for (const [key, nested] of Object.entries(value)) {
-    if (typeof nested === 'string') {
-      out.push({ key, value: nested });
-      continue;
-    }
-    collectStringEntries(nested, out, options, depth + 1, seen);
-  }
-}
-
-function tryParseJson(content: string): unknown | undefined {
-  try {
-    const parsed: unknown = JSON.parse(content);
-    return parsed;
-  } catch {
-    return undefined;
-  }
 }
 
 function parseDotEnv(content: string): Record<string, string> {
@@ -143,17 +79,6 @@ function parseDotEnv(content: string): Record<string, string> {
 }
 
 function extractGeminiCliEnv(content: string): Record<string, string> {
-  const entries: StringEntry[] = [];
-
-  const json = tryParseJson(content.trim());
-  if (json !== undefined) {
-    collectStringEntries(json, entries, { maxDepth: 12 });
-  }
-
-  for (const [key, value] of Object.entries(parseDotEnv(content))) {
-    entries.push({ key, value });
-  }
-
   const relevantEnvKeys = [
     'GEMINI_API_KEY',
     'GOOGLE_API_KEY',
@@ -164,24 +89,25 @@ function extractGeminiCliEnv(content: string): Record<string, string> {
     'GOOGLE_GENAI_USE_VERTEXAI',
   ] as const;
 
+  const merged: Record<string, string> = {};
+
+  for (const [key, value] of Object.entries(parseDotEnv(content))) {
+    const upperKey = key.trim().toUpperCase();
+    const trimmedValue = value.trim();
+    if (!upperKey || !trimmedValue) continue;
+    if (!(upperKey in merged)) {
+      merged[upperKey] = trimmedValue;
+    }
+  }
+
   for (const key of relevantEnvKeys) {
     const fromProcessEnv = getString(process.env[key]);
-    if (fromProcessEnv) {
-      entries.push({ key, value: fromProcessEnv });
+    if (fromProcessEnv && !(key in merged)) {
+      merged[key] = fromProcessEnv;
     }
   }
 
-  const out: Record<string, string> = {};
-  for (const entry of entries) {
-    const key = entry.key.trim().toUpperCase();
-    const value = entry.value.trim();
-    if (!key || !value) continue;
-    if (!(key in out)) {
-      out[key] = value;
-    }
-  }
-
-  return out;
+  return merged;
 }
 
 function buildGeminiCliProvider(
@@ -214,114 +140,127 @@ function buildGeminiCliProvider(
     );
   }
 
+  const vertexWellKnown = WELL_KNOWN_PROVIDERS.find(
+    (p) => p.type === 'google-vertex-ai',
+  );
+  const aiStudioWellKnown = WELL_KNOWN_PROVIDERS.find(
+    (p) => p.type === 'google-ai-studio',
+  );
+
+  if (!vertexWellKnown || !aiStudioWellKnown) {
+    throw new Error('Required well-known providers are missing.');
+  }
+
+  const modelsForVertex = resolveProviderModels({
+    ...vertexWellKnown,
+    name: 'Gemini CLI',
+  });
+  const modelsForAiStudio = resolveProviderModels({
+    ...aiStudioWellKnown,
+    name: 'Gemini CLI',
+  });
+
   if (applicationCredentials) {
+    if (!location) {
+      throw new Error(
+        t(
+          'Vertex AI (service account JSON key) is missing required env var: GOOGLE_CLOUD_LOCATION.',
+        ),
+      );
+    }
+
+    const auth: GoogleVertexAIServiceAccountConfig = {
+      method: 'google-vertex-ai-auth',
+      subType: 'service-account',
+      keyFilePath: applicationCredentials,
+      projectId: project,
+      location,
+    };
+
+    const provider: Partial<ProviderConfig> = {
+      type: 'google-vertex-ai',
+      name: 'Gemini CLI',
+      baseUrl: vertexWellKnown.baseUrl,
+      auth,
+      models: modelsForVertex,
+    };
+
+    return { provider };
+  }
+
+  if (googleApiKey) {
+    const auth: GoogleVertexAIApiKeyConfig = {
+      method: 'google-vertex-ai-auth',
+      subType: 'api-key',
+      apiKey: googleApiKey,
+    };
+
+    const provider: Partial<ProviderConfig> = {
+      type: 'google-vertex-ai',
+      name: 'Gemini CLI',
+      baseUrl: vertexWellKnown.baseUrl,
+      auth,
+      models: modelsForVertex,
+    };
+
+    return { provider };
+  }
+
+  if (geminiApiKey) {
+    const provider: Partial<ProviderConfig> = {
+      type: 'google-ai-studio',
+      name: 'Gemini CLI',
+      baseUrl: aiStudioWellKnown.baseUrl,
+      auth: {
+        method: 'api-key',
+        apiKey: geminiApiKey,
+      },
+      models: modelsForAiStudio,
+    };
+
+    return { provider };
+  }
+
+  if (project || location || useVertexFromEnv) {
     if (!project || !location) {
       const missing: string[] = [];
       if (!project) missing.push('GOOGLE_CLOUD_PROJECT');
       if (!location) missing.push('GOOGLE_CLOUD_LOCATION');
       throw new Error(
         t(
-          'Vertex AI (service account JSON key) is missing required env var(s): {0}.',
+          'Vertex AI (ADC) is missing required env var(s): {0}.',
           missing.join(', '),
         ),
       );
     }
 
-    const providerForMatching: ProviderConfig = {
+    const auth: GoogleVertexAIAdcConfig = {
+      method: 'google-vertex-ai-auth',
+      subType: 'adc',
+      projectId: project,
+      location,
+    };
+
+    const provider: Partial<ProviderConfig> = {
       type: 'google-vertex-ai',
       name: 'Gemini CLI',
-      baseUrl: `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}`,
-      auth: {
-        method: 'api-key',
-        apiKey: applicationCredentials,
-      },
-      models: [],
+      baseUrl: vertexWellKnown.baseUrl,
+      auth,
+      models: modelsForVertex,
     };
 
-    const provider: Partial<ProviderConfig> = {
-      ...providerForMatching,
-      models: getGeminiCliDefaultModels(providerForMatching),
-    };
     return { provider };
   }
 
-  if (googleApiKey) {
-    const providerForMatching: ProviderConfig = {
-      type: 'google-vertex-ai',
-      name: 'Gemini CLI',
-      baseUrl: 'https://aiplatform.googleapis.com',
-      auth: {
-        method: 'api-key',
-        apiKey: googleApiKey,
-      },
-      models: [],
-    };
-    const provider: Partial<ProviderConfig> = {
-      ...providerForMatching,
-      models: getGeminiCliDefaultModels(providerForMatching),
-    };
-    return { provider };
-  }
-
-  if (geminiApiKey) {
-    const providerForMatching: ProviderConfig = {
-      type: 'google-ai-studio',
-      name: 'Gemini CLI',
-      baseUrl: 'https://generativelanguage.googleapis.com',
-      auth: {
-        method: 'api-key',
-        apiKey: geminiApiKey,
-      },
-      models: [],
-    };
-    const provider: Partial<ProviderConfig> = {
-      ...providerForMatching,
-      models: getGeminiCliDefaultModels(providerForMatching),
-    };
-    return { provider };
-  }
-
-  if (project || location || useVertexFromEnv) {
-    throw new Error(
-      t(
-        'Gemini CLI appears to be configured for Vertex AI without API keys (ADC / Login with Google). This migration only supports GEMINI_API_KEY, GOOGLE_API_KEY, or GOOGLE_APPLICATION_CREDENTIALS.',
-      ),
-    );
-  }
-
-  throw new Error(
-    t(
-      'No supported Gemini CLI authentication variables found. Set one of GEMINI_API_KEY (Gemini API key), GOOGLE_API_KEY (Google Cloud API key), or GOOGLE_APPLICATION_CREDENTIALS (Vertex service account JSON key).',
-    ),
-  );
+  throw new GeminiCliOAuthDetectedError();
 }
 
 export const geminiCliMigrationSource: ProviderMigrationSource = {
   id: 'gemini-cli',
   displayName: 'Gemini CLI',
   async detectConfigFile(): Promise<string | undefined> {
-    const envCandidates = [
-      process.env.GEMINI_CLI_ENV_PATH,
-      process.env.GEMINI_DOTENV_PATH,
-      process.env.GEMINI_ENV_PATH,
-      process.env.GEMINI_CONFIG_PATH,
-    ]
-      .filter(
-        (value): value is string =>
-          typeof value === 'string' && value.trim().length > 0,
-      )
-      .map((value) => normalizeConfigFilePathInput(value));
-
     const home = os.homedir();
-    const candidates: string[] = [
-      ...envCandidates,
-      path.join(home, '.gemini', '.env'),
-      path.join(home, '.env'),
-      path.join(process.cwd(), '.gemini', '.env'),
-      path.join(process.cwd(), '.env'),
-    ];
-
-    return firstExistingFilePath(candidates);
+    return firstExistingFilePath([path.join(home, '.gemini', '.env')]);
   },
   async importFromConfigContent(
     content: string,

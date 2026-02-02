@@ -9,7 +9,11 @@ import type {
   ProviderMigrationCandidate,
   ProviderMigrationSource,
 } from '../../migration';
-import { ClaudeCodeOAuthDetectedError } from '../../migration/errors';
+import {
+  ClaudeCodeOAuthDetectedError,
+  CodexOAuthDetectedError,
+  GeminiCliOAuthDetectedError,
+} from '../../migration/errors';
 import type { ProviderConfig } from '../../types';
 import { pickQuickItem, showInput } from '../component';
 import { createProviderDraft, validateProviderNameUnique } from '../form-utils';
@@ -323,6 +327,12 @@ async function importProvidersFromContent(
     if (error instanceof ClaudeCodeOAuthDetectedError) {
       return handleClaudeCodeOAuthDetected(error);
     }
+    if (error instanceof CodexOAuthDetectedError) {
+      return handleCodexOAuthDetected(error);
+    }
+    if (error instanceof GeminiCliOAuthDetectedError) {
+      return handleGeminiCliOAuthDetected(error);
+    }
     const message = error instanceof Error ? error.message : String(error);
     vscode.window.showErrorMessage(
       t('Failed to import from {0}: {1}', source.displayName, message),
@@ -346,6 +356,12 @@ async function importProvidersFromPath(
   } catch (error) {
     if (error instanceof ClaudeCodeOAuthDetectedError) {
       return handleClaudeCodeOAuthDetected(error);
+    }
+    if (error instanceof CodexOAuthDetectedError) {
+      return handleCodexOAuthDetected(error);
+    }
+    if (error instanceof GeminiCliOAuthDetectedError) {
+      return handleGeminiCliOAuthDetected(error);
     }
     const message = error instanceof Error ? error.message : String(error);
     vscode.window.showErrorMessage(
@@ -433,6 +449,70 @@ function handleClaudeCodeOAuthDetected(
     route: {
       kind: 'wellKnownProviderAuth',
       provider: claudeCodeProvider,
+      draft,
+    },
+  };
+}
+
+function handleCodexOAuthDetected(_error: CodexOAuthDetectedError): UiNavAction {
+  const codexProvider = WELL_KNOWN_PROVIDERS.find((p) => p.type === 'openai-codex');
+
+  if (!codexProvider) {
+    vscode.window.showErrorMessage(
+      t('Codex provider not found in well-known providers.'),
+      { modal: true },
+    );
+    return { kind: 'stay' };
+  }
+
+  vscode.window.showInformationMessage(
+    t('Codex OAuth detected. Please re-authenticate.'),
+  );
+
+  const draft = createProviderDraft();
+  draft.type = codexProvider.type;
+  draft.name = codexProvider.name;
+  draft.baseUrl = codexProvider.baseUrl;
+
+  return {
+    kind: 'replace',
+    route: {
+      kind: 'wellKnownProviderAuth',
+      provider: codexProvider,
+      draft,
+    },
+  };
+}
+
+function handleGeminiCliOAuthDetected(
+  _error: GeminiCliOAuthDetectedError,
+): UiNavAction {
+  const geminiCliProvider = WELL_KNOWN_PROVIDERS.find(
+    (p) => p.type === 'google-gemini-cli',
+  );
+
+  if (!geminiCliProvider) {
+    vscode.window.showErrorMessage(
+      t('Google Gemini CLI provider not found in well-known providers.'),
+      { modal: true },
+    );
+    return { kind: 'stay' };
+  }
+
+  vscode.window.showInformationMessage(
+    t('Gemini CLI OAuth detected. Please re-authenticate.'),
+  );
+
+  const draft = createProviderDraft();
+  draft.type = geminiCliProvider.type;
+  draft.name = geminiCliProvider.name;
+  draft.baseUrl = geminiCliProvider.baseUrl;
+
+  return {
+    kind: 'replace',
+    route: {
+      kind: 'wellKnownProviderAuth',
+      provider: geminiCliProvider,
       draft,
     },
   };

@@ -6,36 +6,41 @@ import type {
   ProviderMigrationCandidate,
   ProviderMigrationSource,
 } from './types';
-import {
-  firstExistingFilePath,
-  normalizeConfigFilePathInput,
-} from './fs-utils';
-import {
-  WELL_KNOWN_MODELS,
-  WellKnownModelId,
-  normalizeWellKnownConfigs,
-} from '../well-known/models';
+import { firstExistingFilePath } from './fs-utils';
+import { WELL_KNOWN_MODELS, normalizeWellKnownConfigs } from '../well-known/models';
+import { WELL_KNOWN_PROVIDERS, resolveProviderModels } from '../well-known/providers';
 import { t } from '../i18n';
 import type { ModelConfig, ProviderConfig } from '../types';
 import { migrationLog } from '../logger';
+import { CodexOAuthDetectedError } from './errors';
 
-const CODEX_DEFAULT_MODEL_IDS: WellKnownModelId[] = [
-  'gpt-5.2-codex',
-  'gpt-5.1-codex-mini',
-  'gpt-5.1-codex-max',
-  'gpt-5.2',
-] as const;
+function normalizeBaseUrlForCompare(value: string): string {
+  return value.replace(/\/+$/, '');
+}
 
-function getCodexDefaultModels(provider: ProviderConfig): ModelConfig[] {
-  const models: (typeof WELL_KNOWN_MODELS)[number][] = [];
-  for (const id of CODEX_DEFAULT_MODEL_IDS) {
-    const model = WELL_KNOWN_MODELS.find((m) => m.id === id);
-    if (!model) {
-      throw new Error(t('Well-known model not found: {0}', id));
-    }
-    models.push(model);
-  }
-  return normalizeWellKnownConfigs(models, undefined, provider);
+function findWellKnownProvider(
+  type: ProviderConfig['type'],
+  baseUrl: string,
+): (typeof WELL_KNOWN_PROVIDERS)[number] | undefined {
+  const normalized = normalizeBaseUrlForCompare(baseUrl);
+  const exact = WELL_KNOWN_PROVIDERS.find(
+    (p) => p.type === type && normalizeBaseUrlForCompare(p.baseUrl) === normalized,
+  );
+  return exact ?? WELL_KNOWN_PROVIDERS.find((p) => p.type === type);
+}
+
+function getWellKnownBaseUrl(type: ProviderConfig['type']): string | undefined {
+  return WELL_KNOWN_PROVIDERS.find((p) => p.type === type)?.baseUrl;
+}
+
+function getDefaultModelsFromWellKnown(
+  type: ProviderConfig['type'],
+  baseUrl: string,
+): ModelConfig[] {
+  const wk = findWellKnownProvider(type, baseUrl);
+  if (!wk) return [];
+  if (wk.models.length === 0) return [];
+  return resolveProviderModels({ ...wk, baseUrl });
 }
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
@@ -116,19 +121,24 @@ async function buildCodexProviderFromToml(
       ? 'Codex'
       : `Codex (${effectiveProviderId})`);
 
+  // Built-in provider wire_api is not configurable in config.toml; assume responses for "openai".
+  const providerWireApi =
+    parseWireApi(providerConfig?.['wire_api']) ??
+    (effectiveProviderId === 'openai' ? 'responses' : undefined);
+
+  const providerType: ProviderConfig['type'] =
+    providerWireApi === 'chat' ? 'openai-chat-completion' : 'openai-responses';
+
   // Per Codex docs:
   // - Custom providers should define base_url in config.toml.
   // - Built-in provider "openai" can be overridden via OPENAI_BASE_URL.
   const providerBaseUrl =
     getString(providerConfig?.['base_url']) ??
     (effectiveProviderId === 'openai'
-      ? getString(process.env.OPENAI_BASE_URL)
+      ? getString(process.env.OPENAI_BASE_URL) ??
+        getWellKnownBaseUrl(providerType) ??
+        'https://api.openai.com'
       : undefined);
-
-  // Built-in provider wire_api is not configurable in config.toml; assume responses for "openai".
-  const providerWireApi =
-    parseWireApi(providerConfig?.['wire_api']) ??
-    (effectiveProviderId === 'openai' ? 'responses' : undefined);
 
   // Priority order for API key resolution:
   // 1. Custom env_key from config.toml
@@ -144,22 +154,6 @@ async function buildCodexProviderFromToml(
       : undefined;
   const apiKey = apiKeyFromEnvKey ?? apiKeyFromAuthJson ?? apiKeyFromOpenAI;
 
-  const providerType: ProviderConfig['type'] =
-    providerWireApi === 'chat' ? 'openai-chat-completion' : 'openai-responses';
-
-  if (!providerBaseUrl) {
-    throw new Error(
-      effectiveProviderId === 'openai'
-        ? t(
-            'Missing APIURL for Codex import: set OPENAI_BASE_URL or define a custom model provider with base_url in ~/.codex/config.toml.',
-          )
-        : t(
-            'Missing APIURL for Codex import: set [model_providers.{0}].base_url in ~/.codex/config.toml.',
-            effectiveProviderId,
-          ),
-    );
-  }
-
   if (!apiKey) {
     if (envKey) {
       throw new Error(
@@ -171,13 +165,26 @@ async function buildCodexProviderFromToml(
       );
     }
 
+    if (effectiveProviderId === 'openai') {
+      throw new CodexOAuthDetectedError();
+    }
+
+    throw new Error(
+      t(
+        'Missing APIKEY for Codex import: set [model_providers.{0}].env_key in ~/.codex/config.toml and export that environment variable.',
+        effectiveProviderId,
+      ),
+    );
+  }
+
+  if (!providerBaseUrl) {
     throw new Error(
       effectiveProviderId === 'openai'
         ? t(
-            'Missing APIKEY for Codex import: set OPENAI_API_KEY in your environment, run `codex login --with-api-key`, or ensure ~/.codex/auth.json contains your key.',
+            'Missing APIURL for Codex import: set OPENAI_BASE_URL or define a custom model provider with base_url in ~/.codex/config.toml.',
           )
         : t(
-            'Missing APIKEY for Codex import: set [model_providers.{0}].env_key in ~/.codex/config.toml and export that environment variable.',
+            'Missing APIURL for Codex import: set [model_providers.{0}].base_url in ~/.codex/config.toml.',
             effectiveProviderId,
           ),
     );
@@ -222,7 +229,7 @@ async function buildCodexProviderFromToml(
     baseUrl.includes('openai.com');
 
   if (shouldAddCodexDefaults) {
-    const defaults = getCodexDefaultModels(providerForMatching);
+    const defaults = getDefaultModelsFromWellKnown(providerType, baseUrl);
     for (const m of defaults) {
       if (!models.some((existing) => existing.id === m.id)) {
         models.push(m);
@@ -243,33 +250,13 @@ export const codexMigrationSource: ProviderMigrationSource = {
   displayName: 'Codex',
   async detectConfigFile(): Promise<string | undefined> {
     const home = os.homedir();
-
-    // Official: config lives at $CODEX_HOME/config.toml, where CODEX_HOME defaults to ~/.codex.
     const codexHome =
       typeof process.env.CODEX_HOME === 'string' &&
       process.env.CODEX_HOME.trim()
         ? process.env.CODEX_HOME.trim()
         : path.join(home, '.codex');
 
-    const envCandidates = [
-      // Non-official, but cheap compatibility knobs.
-      process.env.CODEX_CONFIG_PATH,
-      process.env.OPENAI_CODEX_CONFIG_PATH,
-      process.env.CODEX_SETTINGS_PATH,
-    ]
-      .filter(
-        (value): value is string =>
-          typeof value === 'string' && value.trim().length > 0,
-      )
-      .map((value) => normalizeConfigFilePathInput(value));
-
-    const candidates: string[] = [
-      ...envCandidates,
-      path.join(codexHome, 'config.toml'),
-      path.join(home, '.codex', 'config.toml'),
-    ];
-
-    return firstExistingFilePath(candidates);
+    return firstExistingFilePath([path.join(codexHome, 'config.toml')]);
   },
   async importFromConfigContent(
     content: string,

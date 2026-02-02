@@ -8,3 +8,17 @@ export class ClaudeCodeOAuthDetectedError extends Error {
     this.name = 'ClaudeCodeOAuthDetectedError';
   }
 }
+
+export class CodexOAuthDetectedError extends Error {
+  constructor() {
+    super('Codex OAuth detected. Please re-authenticate via ChatGPT.');
+    this.name = 'CodexOAuthDetectedError';
+  }
+}
+
+export class GeminiCliOAuthDetectedError extends Error {
+  constructor() {
+    super('Gemini CLI OAuth detected. Please re-authenticate.');
+    this.name = 'GeminiCliOAuthDetectedError';
+  }
+}
