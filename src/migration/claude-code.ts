@@ -4,10 +4,7 @@ import type {
   ProviderMigrationCandidate,
   ProviderMigrationSource,
 } from './types';
-import {
-  firstExistingFilePath,
-  normalizeConfigFilePathInput,
-} from './fs-utils';
+import { firstExistingFilePath, isExistingFile } from './fs-utils';
 import {
   WELL_KNOWN_MODELS,
   WellKnownModelId,
@@ -240,74 +237,31 @@ function buildClaudeCodeProvider(
   return { provider };
 }
 
+function getClaudeCodeConfigPaths(): string[] {
+  const home = os.homedir();
+  return [
+    path.join(home, '.claude', 'settings.json'),
+    path.join(home, '.claude', 'settings.local.json'),
+    path.join(home, '.claude.json'),
+  ];
+}
+
+export async function detectAllConfigFiles(): Promise<string[]> {
+  const candidates = getClaudeCodeConfigPaths();
+  const existing: string[] = [];
+  for (const candidate of candidates) {
+    if (await isExistingFile(candidate)) {
+      existing.push(candidate);
+    }
+  }
+  return existing;
+}
+
 export const claudeCodeMigrationSource: ProviderMigrationSource = {
   id: 'claude-code',
   displayName: 'Claude Code',
   async detectConfigFile(): Promise<string | undefined> {
-    const envCandidates = [
-      process.env.CLAUDE_CODE_CONFIG_PATH,
-      process.env.CLAUDE_CONFIG_PATH,
-      process.env.CLAUDE_SETTINGS_PATH,
-    ]
-      .filter(
-        (value): value is string =>
-          typeof value === 'string' && value.trim().length > 0,
-      )
-      .map((value) => normalizeConfigFilePathInput(value));
-
-    const home = os.homedir();
-    const xdgConfigHome =
-      process.env.XDG_CONFIG_HOME && process.env.XDG_CONFIG_HOME.trim()
-        ? process.env.XDG_CONFIG_HOME.trim()
-        : path.join(home, '.config');
-    const appData = process.env.APPDATA?.trim();
-
-    const candidates: string[] = [
-      ...envCandidates,
-
-      // Common dotfile locations
-      path.join(home, '.claude', 'config.json'),
-      path.join(home, '.claude', 'claude.json'),
-      path.join(home, '.claude', 'settings.json'),
-      path.join(home, '.claude.json'),
-
-      // XDG locations
-      path.join(xdgConfigHome, 'claude', 'config.json'),
-      path.join(xdgConfigHome, 'claude', 'claude.json'),
-      path.join(xdgConfigHome, 'claude-code', 'config.json'),
-      path.join(xdgConfigHome, 'claude-code', 'claude.json'),
-    ];
-
-    // macOS app support dirs
-    if (process.platform === 'darwin') {
-      candidates.push(
-        path.join(
-          home,
-          'Library',
-          'Application Support',
-          'Claude',
-          'config.json',
-        ),
-        path.join(
-          home,
-          'Library',
-          'Application Support',
-          'Claude Code',
-          'config.json',
-        ),
-      );
-    }
-
-    // Windows APPDATA
-    if (appData) {
-      candidates.push(
-        path.join(appData, 'Claude', 'config.json'),
-        path.join(appData, 'Claude Code', 'config.json'),
-        path.join(appData, 'claude', 'config.json'),
-        path.join(appData, 'claude-code', 'config.json'),
-      );
-    }
-
+    const candidates = getClaudeCodeConfigPaths();
     return firstExistingFilePath(candidates);
   },
   async importFromConfigContent(
