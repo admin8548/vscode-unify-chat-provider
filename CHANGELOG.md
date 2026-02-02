@@ -1,5 +1,10 @@
 # Changelog
 
+## v4.4.2 - 2026-02-02
+
+### Fixes
+- add null check for tool call type before processing (0c0342c, SmallMain)
+
 ## v4.4.1 - 2026-02-02
 
 ### Features
