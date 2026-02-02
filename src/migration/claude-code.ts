@@ -4,6 +4,7 @@ import type {
   ProviderMigrationCandidate,
   ProviderMigrationSource,
 } from './types';
+import { ClaudeCodeOAuthDetectedError } from './errors';
 import { firstExistingFilePath, isExistingFile } from './fs-utils';
 import {
   WELL_KNOWN_MODELS,
@@ -131,31 +132,18 @@ function extractClaudeCodeSettings(content: string): ClaudeCodeSettings {
 }
 
 function buildClaudeCodeProvider(
-  settings: ReturnType<typeof extractClaudeCodeSettings>,
+  settings: ClaudeCodeSettings,
 ): ProviderMigrationCandidate {
-  const baseUrl = settings.baseUrl;
-  const apiKey = settings.apiKey;
-
-  if (!baseUrl || !apiKey) {
-    const missing: string[] = [];
-    if (!baseUrl) missing.push('URL');
-    if (!apiKey) missing.push('TOKEN/APIKEY');
-    throw new Error(
-      t(
-        'Claude Code config is missing required field(s): {0}',
-        missing.join(', '),
-      ),
-    );
+  if (settings.authMethod === 'oauth') {
+    throw new ClaudeCodeOAuthDetectedError(settings.oauthEmail);
   }
 
+  const baseUrl = settings.baseUrl ?? 'https://api.anthropic.com';
+
   const providerForMatching: ProviderConfig = {
-    type: 'anthropic',
+    type: 'claude-code',
     name: 'Claude Code',
     baseUrl,
-    auth: {
-      method: 'api-key',
-      apiKey,
-    },
     models: [],
   };
 
@@ -163,6 +151,13 @@ function buildClaudeCodeProvider(
     ...providerForMatching,
     models: getClaudeCodeDefaultModels(providerForMatching),
   };
+
+  if (settings.authMethod === 'api-key' && settings.apiKey) {
+    provider.auth = {
+      method: 'api-key',
+      apiKey: settings.apiKey,
+    };
+  }
 
   return { provider };
 }
