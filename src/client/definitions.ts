@@ -306,9 +306,10 @@ export const FEATURES: Record<FeatureId, Feature> = {
     supportedFamilys: ['claude-'],
   },
   [FeatureId.OpenAIOnlyMaxCompletionTokens]: {
-    supportedProviders: ['api.cerebras.ai'],
+    supportedProviders: ['api.cerebras.ai', 'opencode.ai'],
     supportedFamilys: [
       'codex-mini-latest',
+      'gpt-5.2',
       'gpt-5.1',
       'gpt-5.1-codex',
       'gpt-5.1-codex-max',
