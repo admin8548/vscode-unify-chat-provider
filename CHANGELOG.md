@@ -1,5 +1,10 @@
 # Changelog
 
+## v4.4.3 - 2026-02-03
+
+### Fixes
+- the codex migration code is too strict. (ac4d8b8, SmallMain)
+
 ## v4.4.2 - 2026-02-02
 
 ### Fixes
