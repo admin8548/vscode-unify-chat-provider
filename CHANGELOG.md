@@ -1,5 +1,17 @@
 # Changelog
 
+## v4.5.0 - 2026-02-06
+
+### Features
+- update models to include Claude Opus 4.6 support (0322b0a, SmallMain)
+- add Claude Opus 4.6 model support (89c1c66, SmallMain)
+- add GPT-5.3-Codex model support (3dc0c19, SmallMain)
+
+### Chores
+- downgrade @types/vscode to version 1.104.0 (1898ab7, SmallMain)
+- update dependencies (c03a21c, SmallMain)
+- update vscode dts versions (3610637, SmallMain)
+
 ## v4.4.4 - 2026-02-05
 
 ### Fixes
