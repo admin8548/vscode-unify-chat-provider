@@ -49,7 +49,7 @@ Check out the [Cookbook](#-cookbook), you can start using it in minutes:
   - [Add GitHub Copilot Account](#add-github-copilot-account)
 - **Free Kimi K2.5, GLM 4.7, MiniMax M2.1 Series Models**:
   - [Add Nvidia Account](#add-nvidia-account)
-- **Free GLM 4.7, Kimi K2, Qwen3, DeepSeek Series Models**:
+- **Free Kimi K2.5, GLM 4.7, MiniMax M2.1, Qwen3, DeepSeek Series Models**:
   - [Add iFlow API Key or CLI Account](#add-iflow-api-key-or-cli-account)
 - More Recipes:
   - [Impersonate Claude Code Client](#impersonate-claude-code-client)

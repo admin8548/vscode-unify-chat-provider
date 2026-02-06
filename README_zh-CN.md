@@ -49,7 +49,7 @@ Unify Chat Provider
   - [添加 GitHub Copilot 账号](#添加-github-copilot-账号)
 - **免费的 Kimi K2.5、GLM 4.7、MiniMax M2.1 等系列模型**：
   - [添加 Nvidia 账号](#添加-nvidia-账号)
-- **免费的 GLM 4.7、Kimi K2、Qwen3、DeepSeek 等系列模型**：
+- **免费的 Kimi K2.5、GLM 4.7、MiniMax M2.1、Qwen3、DeepSeek 等系列模型**：
   - [添加 iFlow API Key 或 CLI 账号](#添加-iflow-api-key-或-cli-账号)
 - 更多食谱：
   - [伪装 Claude Code 客户端](#伪装-claude-code-客户端)
@@ -563,8 +563,8 @@ vscode://SmallMain.vscode-unify-chat-provider/import-config?config=<input>&auth=
 | [Xiaomi MIMO](https://mimo.xiaomi.com/)                                               | <li>ThinkingParam <li>ReasoningContent                          |                       |
 | [Ollama Local](https://ollama.com/)                                                   |                                                                 |                       |
 | [Ollama Cloud](https://ollama.com/)                                                   |                                                                 |                       |
-| [阶跃星辰 (中国站)](https://platform.stepfun.com/)                                     | <li>ReasoningField                                              |                       |
-| [阶跃星辰 (国际站)](https://platform.stepfun.com/)                                     | <li>ReasoningField                                              |                       |
+| [阶跃星辰 (中国站)](https://platform.stepfun.com/)                                    | <li>ReasoningField                                              |                       |
+| [阶跃星辰 (国际站)](https://platform.stepfun.com/)                                    | <li>ReasoningField                                              |                       |
 | [智谱 AI](https://open.bigmodel.cn/)                                                  | <li>ThinkingParam <li>ReasoningContent <li>ClearThinking        | [详情](#智谱-ai--zai) |
 | [智谱 AI (Coding Plan)](https://open.bigmodel.cn/)                                    | <li>ThinkingParam <li>ReasoningContent <li>ClearThinking        |                       |
 | [Z.AI](https://z.ai/)                                                                 | <li>ThinkingParam <li>ReasoningContent <li>ClearThinking        | [详情](#智谱-ai--zai) |
