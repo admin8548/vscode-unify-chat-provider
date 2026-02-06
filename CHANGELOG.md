@@ -1,5 +1,10 @@
 # Changelog
 
+## v4.5.1 - 2026-02-06
+
+### Features
+- add Qwen3-Coder-Next model support (9d34289, SmallMain)
+
 ## v4.5.0 - 2026-02-06
 
 ### Features
