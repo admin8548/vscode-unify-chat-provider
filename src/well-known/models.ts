@@ -185,6 +185,38 @@ const _WELL_KNOWN_MODELS = [
     },
   },
   {
+    id: 'claude-opus-4-6',
+    overrides: ['claude-opus-4.6', 'claude-opus-4-6-thinking'],
+    name: 'Claude Opus 4.6',
+    maxInputTokens: 200000,
+    maxOutputTokens: 128000,
+    stream: true,
+    thinking: {
+      type: 'auto',
+      effort: 'xhigh',
+    },
+    capabilities: {
+      toolCalling: true,
+      imageInput: true,
+    },
+  },
+  {
+    id: 'claude-opus-4-5',
+    overrides: ['claude-opus-4.5', 'claude-opus-4-5-thinking'],
+    name: 'Claude Opus 4.5',
+    maxInputTokens: 200000,
+    maxOutputTokens: 64000,
+    stream: true,
+    thinking: {
+      type: 'enabled',
+      budgetTokens: 32000,
+    },
+    capabilities: {
+      toolCalling: true,
+      imageInput: true,
+    },
+  },
+  {
     id: 'claude-sonnet-4-5',
     overrides: ['claude-sonnet-4.5', 'claude-sonnet-4-5-thinking'],
     name: 'Claude Sonnet 4.5',
@@ -207,22 +239,6 @@ const _WELL_KNOWN_MODELS = [
     maxInputTokens: 200000,
     maxOutputTokens: 64000,
     stream: true,
-    capabilities: {
-      toolCalling: true,
-      imageInput: true,
-    },
-  },
-  {
-    id: 'claude-opus-4-5',
-    overrides: ['claude-opus-4.5', 'claude-opus-4-5-thinking'],
-    name: 'Claude Opus 4.5',
-    maxInputTokens: 200000,
-    maxOutputTokens: 64000,
-    stream: true,
-    thinking: {
-      type: 'enabled',
-      budgetTokens: 32000,
-    },
     capabilities: {
       toolCalling: true,
       imageInput: true,

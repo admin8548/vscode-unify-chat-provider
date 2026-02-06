@@ -786,8 +786,8 @@ export class AnthropicProvider implements ApiProvider {
         requestBase.top_p = model.topP;
       }
       if (model.thinking !== undefined) {
-        const { type, budgetTokens } = model.thinking;
-        if (type === 'enabled' || type === 'auto') {
+        const { type, budgetTokens, effort } = model.thinking;
+        if (type === 'enabled') {
           // With interleaved thinking, budget_tokens can exceed max_tokens
           // For regular thinking, it must be less than max_tokens
           requestBase.thinking = {
@@ -798,6 +798,24 @@ export class AnthropicProvider implements ApiProvider {
               anthropicInterleavedThinkingEnabled,
             ),
           };
+        } else if (type === 'auto') {
+          requestBase.thinking = {
+            type: 'adaptive',
+          };
+          if (effort) {
+            requestBase.output_config ??= {};
+            if (effort === 'none') {
+              requestBase.thinking = {
+                type: 'disabled',
+              };
+            } else if (effort === 'xhigh') {
+              requestBase.output_config.effort = 'max';
+            } else if (effort === 'minimal') {
+              requestBase.output_config.effort = 'low';
+            } else {
+              requestBase.output_config.effort = effort;
+            }
+          }
         }
       }
 
