@@ -112,7 +112,6 @@ export class GoogleGeminiCLIProvider extends GoogleCodeAssistProvider {
       { id: 'gemini-2.5-flash-lite' },
       { id: 'gemini-3-pro-preview' },
       { id: 'gemini-3.1-pro-preview' },
-      { id: 'gemini-3.1-pro-preview-customtools' },
       { id: 'gemini-3-flash-preview' },
       { id: 'gemini-3.1-flash-lite-preview' },
     ];
