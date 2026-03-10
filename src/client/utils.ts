@@ -309,10 +309,6 @@ export function resolveOpenAIServiceTier(
   provider: ProviderConfig,
   model: ModelConfig,
 ): 'auto' | 'default' | 'flex' | 'scale' | 'priority' | undefined {
-  if (!matchProvider(provider.baseUrl, 'api.openai.com')) {
-    return undefined;
-  }
-
   switch (model.serviceTier) {
     case 'auto':
       return 'auto';
@@ -333,10 +329,6 @@ export function resolveAnthropicServiceTier(
   provider: ProviderConfig,
   model: ModelConfig,
 ): 'auto' | 'standard_only' | undefined {
-  if (!matchProvider(provider.baseUrl, 'api.anthropic.com')) {
-    return undefined;
-  }
-
   switch (model.serviceTier) {
     case 'auto':
       return 'auto';
