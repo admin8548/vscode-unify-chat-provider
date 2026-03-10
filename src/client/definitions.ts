@@ -480,7 +480,7 @@ export const FEATURES: Record<FeatureId, Feature> = {
     ],
   },
   [FeatureId.OpenAIUsePreviousResponseId]: {
-    supportedProviders: ['api.openai.com'],
+    supportedProviders: ['api.openai.com', 'chatgpt.com'],
   },
   [FeatureId.OpenAIUseVolcContextCaching]: {
     supportedProviders: [
